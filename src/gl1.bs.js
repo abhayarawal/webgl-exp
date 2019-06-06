@@ -31,7 +31,7 @@ function setupContext(canvas) {
   }
 }
 
-var match = DOM$Reason.getElmById(canvasNode);
+var match = DOM$Reason.getElementById(canvasNode);
 
 if (match == null) {
   console.log("webgl-canvas element not found");

@@ -2,9 +2,9 @@
 'use strict';
 
 
-function getElmById(node) {
+function getElementById(node) {
   return document.getElementById(node);
 }
 
-exports.getElmById = getElmById;
+exports.getElementById = getElementById;
 /* No side effect */

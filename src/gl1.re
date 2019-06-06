@@ -33,7 +33,7 @@ let setupContext = (canvas : Dom.element) => {
   };
 }
 
-switch ( DOM.getElmById(canvasNode) -> Js.Nullable.toOption ) {
+switch ( DOM.getElementById(canvasNode) -> Js.Nullable.toOption ) {
 | None => Js.log(canvasNode ++ " element not found");
 | Some(el) => setupContext(el);
 };
