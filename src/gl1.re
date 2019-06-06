@@ -5,34 +5,41 @@ type context;
 type document;
 
 [@bs.val] external doc : document = "document";
-[@bs.send] [@bs.return null_to_opt] external getElementById : (document, string) => option(Dom.element) = "getElementById";
+[@bs.send] external getElementById : (document, string) => Js.Nullable.t(Dom.element) = "getElementById";
 
 /* canvas.getContext(string) */
-[@bs.send] [@bs.return null_to_opt] external getContext : (Dom.element, string) => option(context) = "getContext";
+[@bs.send] external getContext : (Dom.element, string) => Js.Nullable.t(context) = "getContext";
+[@bs.send] external clearColor : (context, float, float, float, float) => unit = "clearColor";
 
 
-let createShader = (gl, sType: shader, source: string) => {
+let createShader = (gl : context, sType: shader, source: string) => {
   switch (sType) {
-  | Vertex => {}
-  | Fragment => {}
+  | Vertex => Js.log("vertex");
+  | Fragment => Js.log("fragment");
   };
 }
 
+
+
+
+
+
 let init = (gl : context) => {
   Js.log("ready");
+  createShader(gl, Fragment, "");
 }
 
 
 let canvasNode : string = "webgl-canvas";
 
 let setupContext = (canvas : Dom.element) => {
-  switch ( getContext(canvas, "webgl2") ) {
+  switch ( Js.Nullable.toOption(getContext(canvas, "webgl2")) ) {
   | None => Js.log("webgl2 context could not be created");
   | Some(gl) => init(gl);
   };
 }
 
-switch ( getElementById(doc, canvasNode) ) {
+switch ( Js.Nullable.toOption(getElementById(doc, canvasNode)) ) {
 | None => Js.log(canvasNode ++ " element not found");
 | Some(el) => setupContext(el);
 };
