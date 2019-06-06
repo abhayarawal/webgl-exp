@@ -1,3 +1,2 @@
-type context;
 
-[@bs.send] external getContext : (Dom.element, string) => Js.Nullable.t(context) = "getContext";
+[@bs.send] external getContext : (Dom.element, string) => Js.Nullable.t(WebGl.glT) = "getContext";

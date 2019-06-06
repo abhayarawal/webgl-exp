@@ -1,8 +1,8 @@
 
-type document;
+type element;
 
-[@bs.val] external doc : document = "document";
+[@bs.val] external document : element = "document";
 
-[@bs.send] external getNodeById : (document, string) => Js.Nullable.t(Dom.element) = "getElementById";
+[@bs.send] external getNodeById : (element, string) => Js.Nullable.t(Dom.element) = "getElementById";
 
-let getElementById = (node: string) => getNodeById(doc, node)
+let getElementById = (node: string) => getNodeById(document, node)

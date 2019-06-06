@@ -1,12 +1,10 @@
+open WebGl;
+open DOM;
 
 type shader = Vertex | Fragment;
 
 
-/* canvas.getContext(string) */
-/* [@bs.send] external clearColor : (context, float, float, float, float) => unit = "clearColor"; */
-
-
-let createShader = (gl : Canvas.context, sType: shader, source: string) => {
+let createShader = (gl : glT, sType: shader, source: string) => {
   switch (sType) {
   | Vertex => Js.log("vertex");
   | Fragment => Js.log("fragment");
@@ -18,9 +16,12 @@ let createShader = (gl : Canvas.context, sType: shader, source: string) => {
 
 
 
-let init = (gl : Canvas.context) => {
+let init = (gl : glT) => {
   Js.log("ready");
   createShader(gl, Fragment, "");
+
+  clearColor(gl, 0.6, 0.9, 0.5, 1.0);
+  clear(gl, getCOLOR_BUFFER_BIT(gl));
 }
 
 
@@ -33,7 +34,7 @@ let setupContext = (canvas : Dom.element) => {
   };
 }
 
-switch ( DOM.getElementById(canvasNode) -> Js.Nullable.toOption ) {
+switch ( getElementById(canvasNode) -> Js.Nullable.toOption ) {
 | None => Js.log(canvasNode ++ " element not found");
 | Some(el) => setupContext(el);
 };

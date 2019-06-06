@@ -16,6 +16,8 @@ function createShader(gl, sType, source) {
 function init(gl) {
   console.log("ready");
   console.log("fragment");
+  gl.clearColor(0.6, 0.9, 0.5, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
   return /* () */0;
 }
 
