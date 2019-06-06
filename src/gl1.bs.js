@@ -2,20 +2,7 @@
 'use strict';
 
 var Curry = require("bs-platform/lib/js/curry.js");
-var Caml_option = require("bs-platform/lib/js/caml_option.js");
 var CamlinternalOO = require("bs-platform/lib/js/camlinternalOO.js");
-
-var canvasNode = "webgl-canvass";
-
-var elCanvas = document.getElementById(canvasNode);
-
-var elCanvas$1 = elCanvas === null ? undefined : Caml_option.some(elCanvas);
-
-if (elCanvas !== null) {
-  console.log(elCanvas$1);
-} else {
-  console.log("webgl-canvass element not found");
-}
 
 var class_tables = [
   0,
@@ -59,7 +46,34 @@ function createShader(gl, sType, source) {
   }
 }
 
-exports.canvasNode = canvasNode;
-exports.elCanvas = elCanvas$1;
+function init(gl) {
+  console.log("ready");
+  return /* () */0;
+}
+
+var canvasNode = "webgl-canvas";
+
+function setupContext(canvas) {
+  var match = canvas.getContext("webgl2");
+  if (match !== null) {
+    console.log("ready");
+    return /* () */0;
+  } else {
+    console.log("webgl2 context could not be created");
+    return /* () */0;
+  }
+}
+
+var match = document.getElementById(canvasNode);
+
+if (match !== null) {
+  setupContext(match);
+} else {
+  console.log("webgl-canvas element not found");
+}
+
 exports.createShader = createShader;
-/* elCanvas Not a pure module */
+exports.init = init;
+exports.canvasNode = canvasNode;
+exports.setupContext = setupContext;
+/* match Not a pure module */

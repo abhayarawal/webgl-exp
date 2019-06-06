@@ -1,25 +1,14 @@
 
 type shader = Vertex | Fragment;
 
-type canvas;
 type context;
 type document;
-
 
 [@bs.val] external doc : document = "document";
 [@bs.send] [@bs.return null_to_opt] external getElementById : (document, string) => option(Dom.element) = "getElementById";
 
 /* canvas.getContext(string) */
-[@bs.send] external getContext : (canvas, string) => context = "getContext";
-
-let canvasNode : string = "webgl-canvass";
-let elCanvas = getElementById(doc, canvasNode);
-
-
-switch (elCanvas) {
-| None => Js.log(canvasNode ++ " element not found");
-| Some(_) => Js.log(elCanvas);
-};
+[@bs.send] [@bs.return null_to_opt] external getContext : (Dom.element, string) => option(context) = "getContext";
 
 
 let createShader = (gl, sType: shader, source: string) => {
@@ -28,3 +17,22 @@ let createShader = (gl, sType: shader, source: string) => {
   | Fragment => {}
   };
 }
+
+let init = (gl : context) => {
+  Js.log("ready");
+}
+
+
+let canvasNode : string = "webgl-canvas";
+
+let setupContext = (canvas : Dom.element) => {
+  switch ( getContext(canvas, "webgl2") ) {
+  | None => Js.log("webgl2 context could not be created");
+  | Some(gl) => init(gl);
+  };
+}
+
+switch ( getElementById(doc, canvasNode) ) {
+| None => Js.log(canvasNode ++ " element not found");
+| Some(el) => setupContext(el);
+};
