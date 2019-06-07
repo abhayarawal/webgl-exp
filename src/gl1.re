@@ -23,6 +23,7 @@ void main(void) {
 }
 |};
 
+
 let createShader = (gl : glT, sType: shader, source: string) : option(shaderT) => {
   let t = switch (sType) {
     | Vertex => getVERTEX_SHADER(gl);
@@ -37,7 +38,7 @@ let createShader = (gl : glT, sType: shader, source: string) : option(shaderT) =
     | true => Some(shader);
     | false => {
       let message = getShaderInfoLog(gl, shader);
-      Js.log({j|Shader Compile Error: $message|j})
+      Js.log({j|Shader Compile Error: $message|j});
       deleteShader(gl, shader);
       None;
     }
@@ -53,6 +54,7 @@ let add = (~x as x1, ~y=?, ~z=0, ()) => {
   | (_, None) => x1;
   };
 }
+
 
 let vertices : array(float) = [|-0.5, 0.5, 0., -0.5, -0.5, 0., 0.5, -0.5, 0., 0.5, 0.5, 0.|];
 let indices : array(int) = [|0, 1, 2, 0, 2, 3|];
@@ -76,6 +78,27 @@ let createBuffers = (gl: glT) : (bufferT, bufferT) => {
 
   (vertexBuffer, indexBuffer);
 }
+
+
+let createProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) => {
+  let program = createProgram(gl);
+  let (vS, fS) = shaders;
+  
+  attachShader(gl, program, vS);
+  attachShader(gl, program, fS);
+  linkProgram(gl, program);
+
+  switch (getProgramParameter(gl, program, getLINK_STATUS(gl))) {
+    | true => Some(program);
+    | false => {
+      let message = getProgramInfoLog(gl, program);
+      Js.log({j|"Could not create program: $message"|j});
+      deleteProgram(gl, program);
+      None;
+    }
+  };
+}
+
 
 let init = (gl : glT) => {
   Js.log("ready");
