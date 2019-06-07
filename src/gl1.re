@@ -28,13 +28,13 @@ let init = (gl : glT) => {
 let canvasNode : string = "webgl-canvas";
 
 let setupContext = (canvas : Dom.element) => {
-  switch ( Js.Nullable.toOption(Canvas.getContext(canvas, "webgl2")) ) {
+  switch ( Canvas.getContext(canvas, "webgl2") |> Js.Nullable.toOption ) {
   | None => Js.log("webgl2 context could not be created");
   | Some(gl) => init(gl);
   };
 }
 
-switch ( getElementById(canvasNode) -> Js.Nullable.toOption ) {
+switch ( canvasNode |> getElementById |> Js.Nullable.toOption ) {
 | None => Js.log(canvasNode ++ " element not found");
 | Some(el) => setupContext(el);
 };
