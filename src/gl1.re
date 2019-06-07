@@ -37,7 +37,7 @@ let createShader = (gl : glT, sType: shader, source: string) : option(shaderT) =
     | true => Some(shader);
     | false => {
       let message = getShaderInfoLog(gl, shader);
-      Js.log({j|Error: $message|j})
+      Js.log({j|Shader Compile Error: $message|j})
       deleteShader(gl, shader);
       None;
     }
@@ -86,6 +86,7 @@ let init = (gl : glT) => {
   let (vertexBuffer, indexBuffer) = createBuffers(gl);
 
   let vertexShader = Some(createShader(gl, Vertex, glslVertex));
+  let fragShader = Some(createShader(gl, Fragment, glslFrag));
   
   Js.log(vertexShader);
 
@@ -95,13 +96,13 @@ let init = (gl : glT) => {
 let canvasNode : string = "webgl-canvas";
 
 let setupContext = (canvas : Dom.element) => {
-  switch ( Canvas.getContext(canvas, "webgl2") |> Js.Nullable.toOption ) {
+  switch ( Canvas.getContext(canvas, "webgl2") -> Js.Nullable.toOption ) {
     | None => Js.log("webgl2 context could not be created");
     | Some(gl) => init(gl);
   };
 }
 
-switch ( canvasNode |> getElementById |> Js.Nullable.toOption ) {
+switch ( canvasNode -> getElementById -> Js.Nullable.toOption ) {
   | None => Js.log(canvasNode ++ " element not found");
   | Some(el) => setupContext(el);
 };
