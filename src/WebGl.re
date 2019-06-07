@@ -8,7 +8,8 @@ type elementArrayBufferT = arrayBufferT;
 
 type drawT;
 type bufferT;
-
+type shaderTypeT;
+type shaderT;
 
 
 [@bs.send] external clearColor : (glT, float, float, float, float) => unit = "clearColor";
@@ -27,3 +28,10 @@ type bufferT;
 [@bs.send] external bufferData : (glT, arrayBufferT, Float32Array.t, drawT) => unit = "bufferData";
 [@bs.send] external bufferDataInt16 : (glT, elementArrayBufferT, Uint16Array.t, drawT) => unit = "bufferData";
 
+
+[@bs.get] external getVERTEX_SHADER : glT => shaderTypeT = "VERTEX_SHADER";
+[@bs.get] external getFRAGMENT_SHADER : glT => shaderTypeT = "FRAGMENT_SHADER";
+
+[@bs.send] external createShader : (glT, shaderTypeT) => shaderT = "createShader";
+[@bs.send] external shaderSource : (glT, shaderT, string) => unit = "shaderSource";
+[@bs.send] external compileShader : (glT, shaderT) => unit = "compileShader";

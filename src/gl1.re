@@ -23,11 +23,16 @@ void main(void) {
 }
 |};
 
-let createShader = (gl : glT, sType: shader, source: string) => {
-  switch (sType) {
-  | Vertex => ();
-  | Fragment => ();
-  };
+let createShader = (gl : glT, sType: shader, source: string) : shaderT => {
+  let t = switch (sType) {
+    | Vertex => getVERTEX_SHADER(gl);
+    | Fragment => getFRAGMENT_SHADER(gl);
+    };
+
+  let shader = createShader(gl, t);
+  shaderSource(gl, shader, source);
+  compileShader(gl, shader);
+  shader;
 }
 
 
