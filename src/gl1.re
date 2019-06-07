@@ -101,17 +101,21 @@ let createProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) =>
 
 
 let init = (gl : glT) => {
-  Js.log("ready");
-
+  
   clearColor(gl, 0.6, 0.9, 0.5, 1.0);
   clear(gl, getCOLOR_BUFFER_BIT(gl));
 
   let (vertexBuffer, indexBuffer) = createBuffers(gl);
 
-  let vertexShader = Some(createShader(gl, Vertex, glslVertex));
-  let fragShader = Some(createShader(gl, Fragment, glslFrag));
-  
-  Js.log(vertexShader);
+  switch (createShader(gl, Vertex, glslVertex), createShader(gl, Fragment, glslFrag)) {
+    | (None, None) => Js.Exn.raiseError("Could not compile shaders");
+    | (None, Some(_)) => Js.Exn.raiseError("Could not compile vertex shader");
+    | (Some(_), None) => Js.Exn.raiseError("Could not compile fragment shader");
+    | (Some(vertexShader), Some(fragShader)) => {
+      Js.log("ready")
+      Js.log(vertexShader);
+    }
+  };  
 
 }
 
