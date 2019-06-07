@@ -99,6 +99,9 @@ let createProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) =>
   };
 }
 
+let raiseEx = (message : string) => {
+  Js.Exn.raiseError("CUSTOM: " ++ message)
+}
 
 let init = (gl : glT) => {
   
@@ -108,15 +111,16 @@ let init = (gl : glT) => {
   let (vertexBuffer, indexBuffer) = createBuffers(gl);
 
   switch (createShader(gl, Vertex, glslVertex), createShader(gl, Fragment, glslFrag)) {
-    | (None, None) => Js.Exn.raiseError("Could not compile shaders");
-    | (None, Some(_)) => Js.Exn.raiseError("Could not compile vertex shader");
-    | (Some(_), None) => Js.Exn.raiseError("Could not compile fragment shader");
+    | (None, None) => raiseEx("Could not compile shaders");
+    | (None, Some(_)) => raiseEx("Could not compile vertex shader");
+    | (Some(_), None) => raiseEx("Could not compile fragment shader");
     | (Some(vertexShader), Some(fragShader)) => {
-      Js.log("ready")
+      Js.log("ready");
       Js.log(vertexShader);
     }
   };  
 
+  Js.log("exit");
 }
 
 
