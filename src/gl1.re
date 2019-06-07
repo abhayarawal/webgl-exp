@@ -21,7 +21,8 @@ let add = (~x as x1, ~y=?, ~z=0, ()) => {
   };
 }
 
-
+let vertices : array(float) = [|-0.5, 0.5, 0., -0.5, -0.5, 0., 0.5, -0.5, 0., 0.5, 0.5, 0.|];
+let indices : array(int) = [|0, 1, 2, 0, 2, 3|];
 
 let init = (gl : glT) => {
   Js.log("ready");
@@ -29,6 +30,25 @@ let init = (gl : glT) => {
 
   clearColor(gl, 0.6, 0.9, 0.5, 1.0);
   clear(gl, getCOLOR_BUFFER_BIT(gl));
+
+  let vertexBuffer = {
+    let f32 = Float32Array.create(vertices);
+    let buffer = createBuffer(gl);
+    bindBuffer(gl, getARRAY_BUFFER(gl), buffer);
+    bufferData(gl, getARRAY_BUFFER(gl), f32, getSTATIC_DRAW(gl));
+    buffer;
+  }
+
+  let indexBuffer = {
+    let i16 = Uint16Array.create(indices);
+    let buffer = createBuffer(gl);
+    bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), buffer);
+    bufferDataInt16(gl, getELEMENT_ARRAY_BUFFER(gl), i16, getSTATIC_DRAW(gl));
+    buffer;
+  }
+
+  Js.log(indexBuffer);
+  Js.log(vertexBuffer);
 }
 
 
