@@ -11,6 +11,8 @@ type bufferT;
 type shaderTypeT;
 type shaderT;
 
+type compileStatusT;
+
 
 [@bs.send] external clearColor : (glT, float, float, float, float) => unit = "clearColor";
 
@@ -33,5 +35,11 @@ type shaderT;
 [@bs.get] external getFRAGMENT_SHADER : glT => shaderTypeT = "FRAGMENT_SHADER";
 
 [@bs.send] external createShader : (glT, shaderTypeT) => shaderT = "createShader";
+[@bs.send] external deleteShader: (glT, shaderT) => unit = "deleteShader";
 [@bs.send] external shaderSource : (glT, shaderT, string) => unit = "shaderSource";
 [@bs.send] external compileShader : (glT, shaderT) => unit = "compileShader";
+
+[@bs.get] external getCOMPILE_STATUS : glT => compileStatusT = "COMPILE_STATUS";
+
+[@bs.send] external getShaderParameter: (glT, shaderT, compileStatusT) => bool = "getShaderParameter";
+[@bs.send] external getShaderInfoLog : (glT, shaderT) => string = "getShaderInfoLog";

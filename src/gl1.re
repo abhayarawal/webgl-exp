@@ -23,16 +23,25 @@ void main(void) {
 }
 |};
 
-let createShader = (gl : glT, sType: shader, source: string) : shaderT => {
+let createShader = (gl : glT, sType: shader, source: string) : option(shaderT) => {
   let t = switch (sType) {
     | Vertex => getVERTEX_SHADER(gl);
     | Fragment => getFRAGMENT_SHADER(gl);
-    };
+  };
 
   let shader = createShader(gl, t);
   shaderSource(gl, shader, source);
   compileShader(gl, shader);
-  shader;
+
+  switch (getShaderParameter(gl, shader, getCOMPILE_STATUS(gl))) {
+    | true => Some(shader);
+    | false => {
+      let message = getShaderInfoLog(gl, shader);
+      Js.log({j|Error: $message|j})
+      deleteShader(gl, shader);
+      None;
+    }
+  };
 }
 
 
@@ -70,12 +79,16 @@ let createBuffers = (gl: glT) : (bufferT, bufferT) => {
 
 let init = (gl : glT) => {
   Js.log("ready");
-  createShader(gl, Fragment, "");
 
   clearColor(gl, 0.6, 0.9, 0.5, 1.0);
   clear(gl, getCOLOR_BUFFER_BIT(gl));
 
   let (vertexBuffer, indexBuffer) = createBuffers(gl);
+
+  let vertexShader = Some(createShader(gl, Vertex, glslVertex));
+  
+  Js.log(vertexShader);
+
 }
 
 
@@ -83,12 +96,12 @@ let canvasNode : string = "webgl-canvas";
 
 let setupContext = (canvas : Dom.element) => {
   switch ( Canvas.getContext(canvas, "webgl2") |> Js.Nullable.toOption ) {
-  | None => Js.log("webgl2 context could not be created");
-  | Some(gl) => init(gl);
+    | None => Js.log("webgl2 context could not be created");
+    | Some(gl) => init(gl);
   };
 }
 
 switch ( canvasNode |> getElementById |> Js.Nullable.toOption ) {
-| None => Js.log(canvasNode ++ " element not found");
-| Some(el) => setupContext(el);
+  | None => Js.log(canvasNode ++ " element not found");
+  | Some(el) => setupContext(el);
 };
