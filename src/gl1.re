@@ -6,13 +6,20 @@ type shader = Vertex | Fragment;
 
 let createShader = (gl : glT, sType: shader, source: string) => {
   switch (sType) {
-  | Vertex => Js.log("vertex");
-  | Fragment => Js.log("fragment");
+  | Vertex => ();
+  | Fragment => ();
   };
 }
 
 
-
+let add = (~x as x1, ~y=?, ~z=0, ()) => {
+  switch (x1, y) {
+  | (_, Some(y')) => {
+    x1 + y';
+  }
+  | (_, None) => x1;
+  };
+}
 
 
 
