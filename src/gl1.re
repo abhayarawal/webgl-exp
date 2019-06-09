@@ -80,7 +80,7 @@ let createBuffers = (gl: glT) : (bufferT, bufferT) => {
 }
 
 
-let createProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) => {
+let createGlProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) => {
   let program = createProgram(gl);
   let (vS, fS) = shaders;
   
@@ -99,6 +99,8 @@ let createProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) =>
   };
 }
 
+
+
 let raiseEx = (message : string) => {
   Js.Exn.raiseError("CUSTOM: " ++ message)
 }
@@ -115,8 +117,22 @@ let init = (gl : glT) => {
     | (None, Some(_)) => raiseEx("Could not compile vertex shader");
     | (Some(_), None) => raiseEx("Could not compile fragment shader");
     | (Some(vertexShader), Some(fragShader)) => {
-      Js.log("ready");
-      Js.log(vertexShader);
+
+      switch (createGlProgram(gl, (vertexShader, fragShader))) {
+        | None => ()
+        | Some(program) => {
+
+          // VAO Vertex Array Object [attributes]
+          let vertexArray = createVertexArray(gl);
+
+          bindVertexArray(gl, vertexArray);
+          useProgram(gl, program);
+
+          let aPosition = getAttribLocation(gl, program, "a_Position");
+          
+        }
+      };
+      
     }
   };  
 

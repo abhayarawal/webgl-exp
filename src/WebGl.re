@@ -17,6 +17,10 @@ type compileStatusT;
 
 type linkStatusT;
 
+type vertexArrayT;
+
+type attribLocationT = int;
+
 
 [@bs.send] external clearColor : (glT, float, float, float, float) => unit = "clearColor";
 
@@ -62,6 +66,8 @@ type linkStatusT;
 
 [@bs.send] external linkProgram : (glT, programT) => unit = "linkProgram";
 
+[@bs.send] external useProgram : (glT, programT) => unit = "useProgram";
+
 [@bs.send] external deleteProgram : (glT, programT) => unit = "deleteProgram";
 
 [@bs.get] external getLINK_STATUS : glT => linkStatusT = "LINK_STATUS";
@@ -69,3 +75,9 @@ type linkStatusT;
 [@bs.send] external getProgramParameter : (glT, programT, linkStatusT) => bool = "getProgramParameter";
 
 [@bs.send] external getProgramInfoLog : (glT, programT) => string = "getProgramInfoLog";
+
+[@bs.send] external createVertexArray : glT => vertexArrayT = "createVertexArray";
+
+[@bs.send] external bindVertexArray : (glT, vertexArrayT) => unit = "bindVertexArray";
+
+[@bs.send] external getAttribLocation : (glT, programT, string) => attribLocationT = "getAttribLocation";
