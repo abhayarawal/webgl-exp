@@ -4,7 +4,8 @@ type glT = webGL2RenderingContextT;
 
 type programT;
 
-type colorBufferBitT;
+type colorBufferBitT = int;
+type depthBufferBitT = colorBufferBitT;
 type arrayBufferT;
 type elementArrayBufferT = arrayBufferT;
 
@@ -19,12 +20,18 @@ type linkStatusT;
 
 type vertexArrayT;
 
+type primitiveT;
+
+type drawGeometryT;
+
 type attribLocationT = int;
 
 
 [@bs.send] external clearColor : (glT, float, float, float, float) => unit = "clearColor";
 
 [@bs.get] external getCOLOR_BUFFER_BIT : glT => colorBufferBitT = "COLOR_BUFFER_BIT";
+
+[@bs.get] external getDEPTH_BUFFER_BIT : glT => depthBufferBitT = "DEPTH_BUFFER_BIT";
 
 [@bs.send] external clear : (glT, colorBufferBitT) => unit = "clear";
 
@@ -81,3 +88,21 @@ type attribLocationT = int;
 [@bs.send] external bindVertexArray : (glT, vertexArrayT) => unit = "bindVertexArray";
 
 [@bs.send] external getAttribLocation : (glT, programT, string) => attribLocationT = "getAttribLocation";
+
+[@bs.get] [@bs.scope "canvas"] external canvasWidth : glT => int = "width";
+
+[@bs.get] [@bs.scope "canvas"] external canvasHeight : glT => int = "height";
+
+[@bs.send] external viewport : (glT, int, int, int, int) => unit = "viewport";
+
+[@bs.send] external enableVertexAttribArray : (glT, attribLocationT) => unit = "enableVertexAttribArray";
+
+[@bs.send] external vertexAttribPointer : (glT, attribLocationT, int, primitiveT , bool, int, int) => unit = "vertexAttribPointer";
+
+[@bs.get] external getFLOAT : glT => primitiveT = "FLOAT";
+
+[@bs.get] external getUNSIGNED_SHORT : glT => primitiveT = "UNSIGNED_SHORT";
+
+[@bs.send] external drawElements : (glT, drawGeometryT, int, primitiveT, int) => unit = "drawElements";
+
+[@bs.get] external getTRIANGLES : glT => drawGeometryT = "TRIANGLES";
