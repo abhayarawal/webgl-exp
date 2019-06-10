@@ -10,7 +10,10 @@ type arrayBufferT;
 type elementArrayBufferT = arrayBufferT;
 
 type drawT;
-type bufferT;
+
+type bufferSubT;
+type bufferT = Js.Nullable.t(bufferSubT);
+
 type shaderTypeT;
 type shaderT;
 
@@ -18,7 +21,8 @@ type compileStatusT;
 
 type linkStatusT;
 
-type vertexArrayT;
+type vertexArraySubT;
+type vertexArrayT = Js.Nullable.t(vertexArraySubT);
 
 type primitiveT;
 

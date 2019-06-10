@@ -65,6 +65,7 @@ let createBuffers = (gl: glT) : (bufferT, bufferT) => {
     let buffer = createBuffer(gl);
     bindBuffer(gl, getARRAY_BUFFER(gl), buffer);
     bufferData(gl, getARRAY_BUFFER(gl), f32, getSTATIC_DRAW(gl));
+    bindBuffer(gl, getARRAY_BUFFER(gl), Js.Nullable.null);
     buffer;
   };
 
@@ -73,6 +74,7 @@ let createBuffers = (gl: glT) : (bufferT, bufferT) => {
     let buffer = createBuffer(gl);
     bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), buffer);
     bufferDataInt16(gl, getELEMENT_ARRAY_BUFFER(gl), i16, getSTATIC_DRAW(gl));
+    bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), Js.Nullable.null);
     buffer;
   };
 
@@ -140,6 +142,10 @@ let init = (gl : glT) => {
 
           bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), indexBuffer);
           drawElements(gl, getTRIANGLES(gl), Array.length(indices), getUNSIGNED_SHORT(gl), 0);
+
+          bindVertexArray(gl, Js.Nullable.null);
+          bindBuffer(gl, getARRAY_BUFFER(gl), Js.Nullable.null);
+          bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), Js.Nullable.null);
         }
       };
       
