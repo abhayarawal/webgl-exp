@@ -29,7 +29,7 @@ type primitiveT;
 type drawGeometryT;
 
 type attribLocationT = int;
-
+type uniformLocationT;
 
 [@bs.send] external clearColor : (glT, float, float, float, float) => unit = "clearColor";
 
@@ -91,13 +91,17 @@ type attribLocationT = int;
 
 [@bs.send] external bindVertexArray : (glT, vertexArrayT) => unit = "bindVertexArray";
 
+[@bs.send] external getUniformLocation : (glT, programT, string) => uniformLocationT = "getUniformLocation";
+
+[@bs.send] external uniform2f : (glT, uniformLocationT, float, float) => unit = "uniform2f";
+
 [@bs.send] external getAttribLocation : (glT, programT, string) => attribLocationT = "getAttribLocation";
 
-[@bs.get] [@bs.scope "canvas"] external canvasWidth : glT => int = "width";
+[@bs.get] [@bs.scope "canvas"] external canvasWidth : glT => float = "width";
 
-[@bs.get] [@bs.scope "canvas"] external canvasHeight : glT => int = "height";
+[@bs.get] [@bs.scope "canvas"] external canvasHeight : glT => float = "height";
 
-[@bs.send] external viewport : (glT, int, int, int, int) => unit = "viewport";
+[@bs.send] external viewport : (glT, int, int, float, float) => unit = "viewport";
 
 [@bs.send] external enableVertexAttribArray : (glT, attribLocationT) => unit = "enableVertexAttribArray";
 
@@ -110,3 +114,5 @@ type attribLocationT = int;
 [@bs.send] external drawElements : (glT, drawGeometryT, int, primitiveT, int) => unit = "drawElements";
 
 [@bs.get] external getTRIANGLES : glT => drawGeometryT = "TRIANGLES";
+
+[@bs.get] external getLINES : glT => drawGeometryT = "LINES";

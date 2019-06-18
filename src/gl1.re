@@ -6,10 +6,15 @@ type shader = Vertex | Fragment;
 let glslVertex = {|#version 300 es
 precision mediump float;
 
-in vec3 a_Position;
+in vec2 a_position;
+
+uniform vec2 u_resolution;
       
 void main(void) {
-  gl_Position = vec4(a_Position, 1.0);
+  vec2 z1 = a_position / u_resolution;
+  vec2 z2 = z1 * 2.0;
+  vec2 clipSpace = z2 - 1.;
+  gl_Position = vec4(clipSpace * vec2(1., -1.), 0., 1.0);
 }
 |};
 
@@ -56,8 +61,9 @@ let add = (~x as x1, ~y=?, ~z=0, ()) => {
 }
 
 
-let vertices : array(float) = [|-0.5, 0.5, 0., -0.5, -0.5, 0., 0.5, -0.5, 0., 0.5, 0.5, 0.|];
-let indices : array(int) = [|0, 1, 2, 0, 2, 3|];
+let vertices : array(float) = [|10., 100., 10., 10., 200., 10., 200., 100.|];
+let indicesTre : array(int) = [|0, 1, 2, 0, 2, 3|];
+let indices : array(int) = [|0, 1, 1, 2, 0, 2, 0, 3, 3, 2|];
 
 let createBuffers = (gl: glT) : (bufferT, bufferT) => {
   let vertexBuffer = {
@@ -70,7 +76,7 @@ let createBuffers = (gl: glT) : (bufferT, bufferT) => {
   };
 
   let indexBuffer = {
-    let i16 = Uint16Array.create(indices);
+    let i16 = Uint16Array.create(indicesTre);
     let buffer = createBuffer(gl);
     bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), buffer);
     bufferDataInt16(gl, getELEMENT_ARRAY_BUFFER(gl), i16, getSTATIC_DRAW(gl));
@@ -129,19 +135,24 @@ let init = (gl : glT) => {
 
           useProgram(gl, program);
 
-          let aPosition = getAttribLocation(gl, program, "a_Position");
+          let aPosition = getAttribLocation(gl, program, "a_position");
+          let uResolution = getUniformLocation(gl, program, "u_resolution");
+
+          uniform2f(gl, uResolution, canvasWidth(gl), canvasHeight(gl));
 
           bindBuffer(gl, getARRAY_BUFFER(gl), vertexBuffer);
 
           // setup the attributes in the vertex array
           enableVertexAttribArray(gl, aPosition);
-          vertexAttribPointer(gl, aPosition, 3, getFLOAT(gl), false, 0, 0);
+
+          // refer to the currently bound VBO
+          vertexAttribPointer(gl, aPosition, 2, getFLOAT(gl), false, 0, 0);
   
           clear(gl, getCOLOR_BUFFER_BIT(gl) lor getDEPTH_BUFFER_BIT(gl));
           viewport(gl, 0, 0, canvasWidth(gl), canvasHeight(gl));
 
           bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), indexBuffer);
-          drawElements(gl, getTRIANGLES(gl), Array.length(indices), getUNSIGNED_SHORT(gl), 0);
+          drawElements(gl, getTRIANGLES(gl), Array.length(indicesTre), getUNSIGNED_SHORT(gl), 0);
 
           bindVertexArray(gl, Js.Nullable.null);
           bindBuffer(gl, getARRAY_BUFFER(gl), Js.Nullable.null);
