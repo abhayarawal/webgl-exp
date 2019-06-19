@@ -9,22 +9,28 @@ precision mediump float;
 in vec2 a_position;
 
 uniform vec2 u_resolution;
+uniform vec2 u_translation;
+
+out vec4 v_color;
       
 void main(void) {
-  vec2 z1 = a_position / u_resolution;
+  vec2 position = a_position + u_translation;
+  vec2 z1 = position / u_resolution;
   vec2 z2 = z1 * 2.0;
   vec2 clipSpace = z2 - 1.;
   gl_Position = vec4(clipSpace * vec2(1., -1.), 0., 1.0);
+  v_color = gl_Position * 0.5 + 0.5;
 }
 |};
 
 let glslFrag = {|#version 300 es
 precision mediump float;
 
+in vec4 v_color;
 out vec4 fragColor;
 
 void main(void) {
-  fragColor = vec4(1.0, 0.6, 0.5, 1.0);
+  fragColor = v_color;
 }
 |};
 
@@ -61,9 +67,10 @@ let add = (~x as x1, ~y=?, ~z=0, ()) => {
 }
 
 
-let vertices : array(float) = [|10., 100., 10., 10., 200., 10., 200., 100.|];
+let vertices : array(float) = [|100., 200., 100., 500., 700., 500., 700., 200.|];
 let indicesTre : array(int) = [|0, 1, 2, 0, 2, 3|];
 let indices : array(int) = [|0, 1, 1, 2, 0, 2, 0, 3, 3, 2|];
+
 
 let createBuffers = (gl: glT) : (bufferT, bufferT) => {
   let vertexBuffer = {
@@ -131,32 +138,49 @@ let init = (gl : glT) => {
 
           // VAO Vertex Array Object [attributes]
           let vertexArray = createVertexArray(gl);
-          bindVertexArray(gl, vertexArray);
 
-          useProgram(gl, program);
+          
 
           let aPosition = getAttribLocation(gl, program, "a_position");
           let uResolution = getUniformLocation(gl, program, "u_resolution");
+          let uTranslation = getUniformLocation(gl, program, "u_translation");
+          let translation : ref((float, float)) = ref((0., 0.));
 
-          uniform2f(gl, uResolution, canvasWidth(gl), canvasHeight(gl));
+          translation := (2., 6.);
 
-          bindBuffer(gl, getARRAY_BUFFER(gl), vertexBuffer);
+          let draw = () => {
 
-          // setup the attributes in the vertex array
-          enableVertexAttribArray(gl, aPosition);
+            bindBuffer(gl, getARRAY_BUFFER(gl), vertexBuffer);
+            bindVertexArray(gl, vertexArray);
 
-          // refer to the currently bound VBO
-          vertexAttribPointer(gl, aPosition, 2, getFLOAT(gl), false, 0, 0);
-  
-          clear(gl, getCOLOR_BUFFER_BIT(gl) lor getDEPTH_BUFFER_BIT(gl));
-          viewport(gl, 0, 0, canvasWidth(gl), canvasHeight(gl));
+            useProgram(gl, program);         
 
-          bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), indexBuffer);
-          drawElements(gl, getTRIANGLES(gl), Array.length(indicesTre), getUNSIGNED_SHORT(gl), 0);
 
-          bindVertexArray(gl, Js.Nullable.null);
-          bindBuffer(gl, getARRAY_BUFFER(gl), Js.Nullable.null);
-          bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), Js.Nullable.null);
+            // setup the attributes in the vertex array
+            enableVertexAttribArray(gl, aPosition);
+
+            // refer to the currently bound VBO
+            vertexAttribPointer(gl, aPosition, 2, getFLOAT(gl), false, 0, 0);
+    
+            uniform2f(gl, uResolution, canvasWidth(gl), canvasHeight(gl));
+
+            let (x, y) = translation^;
+            uniform2f(gl, uTranslation, x, y);
+
+            clear(gl, getCOLOR_BUFFER_BIT(gl) lor getDEPTH_BUFFER_BIT(gl));
+            viewport(gl, 0, 0, canvasWidth(gl), canvasHeight(gl));
+
+            bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), indexBuffer);
+            drawElements(gl, getTRIANGLES(gl), Array.length(indicesTre), getUNSIGNED_SHORT(gl), 0);
+
+          }
+
+          draw();
+
+
+          // bindVertexArray(gl, Js.Nullable.null);
+          // bindBuffer(gl, getARRAY_BUFFER(gl), Js.Nullable.null);
+          // bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), Js.Nullable.null);
         }
       };
       
