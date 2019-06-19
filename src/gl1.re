@@ -67,7 +67,7 @@ let add = (~x as x1, ~y=?, ~z=0, ()) => {
 }
 
 
-let vertices : array(float) = [|100., 200., 100., 500., 700., 500., 700., 200.|];
+let vertices : array(float) = [|100., 200., 100., 400., 500., 400., 300., 200.|];
 let indicesTre : array(int) = [|0, 1, 2, 0, 2, 3|];
 let indices : array(int) = [|0, 1, 1, 2, 0, 2, 0, 3, 3, 2|];
 
@@ -204,3 +204,12 @@ switch ( canvasNode -> getElementById -> Js.Nullable.toOption ) {
   | None => Js.log(canvasNode ++ " element not found");
   | Some(el) => setupContext(el);
 };
+
+
+module HelloComponent = {
+  [@react.component]
+  let make = (~name) =>
+    <h2> {ReasonReact.string("Hello " ++ name)} </h2>;
+}
+
+ReactDOMRe.renderToElementWithId(<HelloComponent name="Abhaya" />, "root");
