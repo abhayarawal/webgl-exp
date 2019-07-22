@@ -94,7 +94,7 @@ void main () {
 
   const modelViewMatrix = mat4.create();
 
-  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -7.0]);
 
   gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
   gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
