@@ -49,17 +49,30 @@ void main () {
     1.0, 1.0, 1.0,
     -1.0, 1.0, 1.0,
 
-    // bf
+    // back f
     -1.0, -1.0, -1.0,
     -1.0,  1.0, -1.0,
     1.0,  1.0, -1.0,
     1.0, -1.0, -1.0,
+
+    // tf
+    -1.0,  1.0, -1.0,
+    -1.0,  1.0,  1.0,
+    1.0,  1.0,  1.0,
+    1.0,  1.0, -1.0,
+
+    // bottom f
+    -1.0, -1.0, -1.0,
+    1.0, -1.0, -1.0,
+    1.0, -1.0,  1.0,
+    -1.0, -1.0,  1.0,
   ];
 
   const indices = [
-    // ff
     0, 1, 2,      0, 2, 3,
     4, 5, 6,      4, 6, 7,
+    8, 9, 10,     8, 10, 11,
+    12, 13, 14,   12, 14, 15
   ];
 
   let posizione = {
@@ -94,8 +107,9 @@ void main () {
 
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -10.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.3, [1, 0, 0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.5, [0, 1, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.4, [1, 0, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.9, [0, 1, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0, [0, 1, 0]);
 
   gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
   gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
