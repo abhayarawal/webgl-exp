@@ -10,11 +10,14 @@ in vec2 a_position;
 
 uniform vec2 u_resolution;
 uniform vec2 u_translation;
+uniform vec2 u_rotation;
 
 out vec4 v_color;
       
 void main(void) {
   vec2 position = a_position + u_translation;
+  position = vec2(position.x * u_rotation.y + position.y * u_rotation.x,
+                  position.y * u_rotation.y - position.x * u_rotation.x);
   vec2 z1 = position / u_resolution;
   vec2 z2 = z1 * 2.0;
   vec2 clipSpace = z2 - 1.;
@@ -117,7 +120,12 @@ let createGlProgram = (gl: glT, shaders: (shaderT, shaderT)) : option(programT) 
 
 let raiseEx = (message : string) => {
   Js.Exn.raiseError("CUSTOM: " ++ message)
-}
+};
+
+[@bs.val] external pi : float = "Math.PI";
+// [@bs.get] [@bs.scope "Math"] external sin : float => float = "sin";
+// [@bs.send] [@bs.scope "Math"] external cos : float => float = "cos";
+
 
 let init = (gl : glT) => {
   
@@ -139,11 +147,11 @@ let init = (gl : glT) => {
           // VAO Vertex Array Object [attributes]
           let vertexArray = createVertexArray(gl);
 
-          
-
           let aPosition = getAttribLocation(gl, program, "a_position");
           let uResolution = getUniformLocation(gl, program, "u_resolution");
           let uTranslation = getUniformLocation(gl, program, "u_translation");
+          let uRotation = getUniformLocation(gl, program, "u_rotation");
+          
           let translation : ref((float, float)) = ref((0., 0.));
 
           translation := (2., 6.);
@@ -167,16 +175,21 @@ let init = (gl : glT) => {
             let (x, y) = translation^;
             uniform2f(gl, uTranslation, x, y);
 
+            let angleInRadians = 7. *. pi /. 180.;
+            let r1 = sin(angleInRadians);
+            let r2 = cos(angleInRadians);
+
+            uniform2f(gl, uRotation, r1, r2);
+
             clear(gl, getCOLOR_BUFFER_BIT(gl) lor getDEPTH_BUFFER_BIT(gl));
             viewport(gl, 0, 0, canvasWidth(gl), canvasHeight(gl));
 
             bindBuffer(gl, getELEMENT_ARRAY_BUFFER(gl), indexBuffer);
             drawElements(gl, getTRIANGLES(gl), Array.length(indicesTre), getUNSIGNED_SHORT(gl), 0);
-
+            
           }
 
           draw();
-
 
           // bindVertexArray(gl, Js.Nullable.null);
           // bindBuffer(gl, getARRAY_BUFFER(gl), Js.Nullable.null);
@@ -189,6 +202,7 @@ let init = (gl : glT) => {
 
   Js.log("exit");
 }
+
 
 
 let canvasNode : string = "webgl-canvas";
@@ -209,7 +223,8 @@ switch ( canvasNode -> getElementById -> Js.Nullable.toOption ) {
 module HelloComponent = {
   [@react.component]
   let make = (~name) =>
-    <h2> {ReasonReact.string("Hello " ++ name)} </h2>;
+    <h2> {ReasonReact.string("Hiya " ++ name)} </h2>;
 }
 
-ReactDOMRe.renderToElementWithId(<HelloComponent name="Abhaya" />, "root");
+ReactDOMRe.renderToElementWithId(<HelloComponent name="Webgl2" />, "root");
+
