@@ -1,4 +1,4 @@
-import { mat4 } from 'gl-matrix';
+import { vec3, mat4 } from 'gl-matrix';
 import { createProgramWithShaders } from './utility/common';
 
 const vShader = `#version 300 es
@@ -6,14 +6,15 @@ precision highp float;
 precision highp int;
 
 in vec4 a_position;
-in vec4 a_color;
+in vec3 a_normal;
+
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelViewMatrix;
 
-out vec4 v_color;
+out vec3 v_normal;
 
 void main () {
-  v_color = a_color;
+  v_normal = a_normal;
   gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
 }
 `;
@@ -21,11 +22,18 @@ void main () {
 const fShader = `#version 300 es
 precision highp float;
 
-in vec4 v_color;
+in vec3 v_normal; 
+
+uniform vec3 u_reverseLightDir;
+uniform vec4 u_color;
+
 out vec4 color;
 
 void main () {
-  color = v_color;
+  vec3 normal = normalize(v_normal);
+  float light = dot(normal, u_reverseLightDir);
+  color = u_color;
+  color *= light;
 }
 `;
 
@@ -82,11 +90,13 @@ void main () {
   let posizione = {
     attrs: {
       a_position: gl.getAttribLocation(program, 'a_position'),
-      a_color: gl.getAttribLocation(program, 'a_color'),
+      a_normal: gl.getAttribLocation(program, 'a_normal'),
     },
     uniforms: {
       u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
       u_modelViewMatrix: gl.getUniformLocation(program, 'u_modelViewMatrix'),
+      u_color: gl.getUniformLocation(program, 'u_color'),
+      u_reverseLightDir: gl.getUniformLocation(program, 'u_reverseLightDir'),
     }
   }
 
@@ -100,34 +110,40 @@ void main () {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
-  const colors = [
-    0.9, 0.6, 0.7,
-    0.9, 0.6, 0.7,
-    0.9, 0.6, 0.7,
-    0.9, 0.6, 0.7,
+  gl.uniform4fv(posizione.uniforms.u_color, [0.5, 0.4, 0.9, 1.0]);
+  gl.uniform3fv(posizione.uniforms.u_reverseLightDir, vec3.normalize(vec3.create(), [0.5, 0.3, 0.9]));
 
-    0.5, 0.2, 0.9,
-    0.5, 0.2, 0.9,
-    0.5, 0.2, 0.9,
-    0.5, 0.2, 0.9,
+  const vertexNormals = [
+    // Front
+     0.0,  0.0,  1.0,
+     0.0,  0.0,  1.0,
+     0.0,  0.0,  1.0,
+     0.0,  0.0,  1.0,
 
-    0.2, 0.8, 0.2,
-    0.2, 0.8, 0.2,
-    0.2, 0.8, 0.2,
-    0.2, 0.8, 0.2,
+    // Back
+     0.0,  0.0, -1.0,
+     0.0,  0.0, -1.0,
+     0.0,  0.0, -1.0,
+     0.0,  0.0, -1.0,
 
-    0.7, 0.5, 0.7,
-    0.7, 0.5, 0.7,
-    0.7, 0.5, 0.7,
-    0.7, 0.5, 0.7,
-  ]
-  let colorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(posizione.attrs.a_color);
-  gl.vertexAttribPointer(posizione.attrs.a_color, 3, gl.FLOAT, false, 0, 0);
+    // Top
+     0.0,  1.0,  0.0,
+     0.0,  1.0,  0.0,
+     0.0,  1.0,  0.0,
+     0.0,  1.0,  0.0,
 
+    // Bottom
+     0.0, -1.0,  0.0,
+     0.0, -1.0,  0.0,
+     0.0, -1.0,  0.0,
+     0.0, -1.0,  0.0,
+  ];
 
+  let normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(posizione.attrs.a_normal);
+  gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
 
   const fov = 45 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
@@ -139,7 +155,7 @@ void main () {
 
   const modelViewMatrix = mat4.create();
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -10.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.4, [1, 0, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.5, [1, 0, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0.9, [0, 1, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0, [0, 1, 0]);
 
