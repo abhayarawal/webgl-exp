@@ -10,7 +10,10 @@ in vec4 a_color;
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelViewMatrix;
 
+out vec4 v_color;
+
 void main () {
+  v_color = a_color;
   gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
 }
 `;
@@ -18,10 +21,11 @@ void main () {
 const fShader = `#version 300 es
 precision highp float;
 
+in vec4 v_color;
 out vec4 color;
 
 void main () {
-  color = vec4(1., .2, .6, 1.);
+  color = v_color;
 }
 `;
 
@@ -78,6 +82,7 @@ void main () {
   let posizione = {
     attrs: {
       a_position: gl.getAttribLocation(program, 'a_position'),
+      a_color: gl.getAttribLocation(program, 'a_color'),
     },
     uniforms: {
       u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
@@ -94,6 +99,33 @@ void main () {
   let indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+  const colors = [
+    0.9, 0.6, 0.7,
+    0.9, 0.6, 0.7,
+    0.9, 0.6, 0.7,
+    0.9, 0.6, 0.7,
+
+    0.5, 0.2, 0.9,
+    0.5, 0.2, 0.9,
+    0.5, 0.2, 0.9,
+    0.5, 0.2, 0.9,
+
+    0.2, 0.8, 0.2,
+    0.2, 0.8, 0.2,
+    0.2, 0.8, 0.2,
+    0.2, 0.8, 0.2,
+
+    0.7, 0.5, 0.7,
+    0.7, 0.5, 0.7,
+    0.7, 0.5, 0.7,
+    0.7, 0.5, 0.7,
+  ]
+  let colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(posizione.attrs.a_color);
+  gl.vertexAttribPointer(posizione.attrs.a_color, 3, gl.FLOAT, false, 0, 0);
 
 
 
