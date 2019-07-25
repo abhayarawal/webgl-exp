@@ -83,13 +83,27 @@ void main () {
     1.0, -1.0, -1.0,
     1.0, -1.0,  1.0,
     -1.0, -1.0,  1.0,
+
+    // Right face
+    1.0, -1.0, -1.0,
+    1.0,  1.0, -1.0,
+    1.0,  1.0,  1.0,
+    1.0, -1.0,  1.0,
+    
+    // Left face
+    -1.0, -1.0, -1.0,
+    -1.0, -1.0,  1.0,
+    -1.0,  1.0,  1.0,
+    -1.0,  1.0, -1.0,
   ];
 
   const indices = [
     0, 1, 2,      0, 2, 3,
     4, 5, 6,      4, 6, 7,
     8, 9, 10,     8, 10, 11,
-    12, 13, 14,   12, 14, 15
+    12, 13, 14,   12, 14, 15,
+    16, 17, 18,     16, 18, 19,   // right
+    20, 21, 22,     20, 22, 23,   // left
   ];
 
   let posizione = {
@@ -110,8 +124,8 @@ void main () {
 
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [0, 0, -1]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.01, 0.01, 0.01, 1]);
-  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [0.75, 0.75, 0.75, 1]);
-  gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.34, 0.6, 0.7, 1);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [0.9, 0.9, 0.9, 1]);
+  gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.3, 0.5, 0.8, 1);
 
   let vertexPosBuffer = gl.createBuffer();  
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
@@ -147,6 +161,18 @@ void main () {
      0.0, -1.0,  0.0,
      0.0, -1.0,  0.0,
      0.0, -1.0,  0.0,
+
+     // Right
+     1.0,  0.0,  0.0,
+     1.0,  0.0,  0.0,
+     1.0,  0.0,  0.0,
+     1.0,  0.0,  0.0,
+
+    // Left
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0
   ];
 
   let normalBuffer = gl.createBuffer();
@@ -166,8 +192,8 @@ void main () {
   const modelViewMatrix = mat4.create();
   mat4.identity(modelViewMatrix);
   mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -9.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.4, [1, 0, 0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.9, [0, 1, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.5, [1, 0, 0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.7, [0, 1, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0, [0, 1, 0]);
 
   const normalMatrix = mat4.create();
