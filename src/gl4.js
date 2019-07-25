@@ -191,10 +191,9 @@ void main () {
 
   const modelViewMatrix = mat4.create();
   mat4.identity(modelViewMatrix);
-  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -9.0]);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -7.0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0.5, [1, 0, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0.7, [0, 1, 0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0, [0, 1, 0]);
 
   const normalMatrix = mat4.create();
   mat4.copy(normalMatrix, modelViewMatrix);
