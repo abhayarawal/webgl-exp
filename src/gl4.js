@@ -6,15 +6,27 @@ precision highp float;
 precision highp int;
 
 in vec4 a_position;
-in vec3 a_normal;
+in vec3 a_vertexNormal;
 
+uniform mat4 u_normalMatrix;
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelViewMatrix;
+uniform vec3 u_lightDirection;
+uniform vec4 u_lightDiffuse;
+uniform vec4 u_lightAmbient;
+uniform vec4 u_materialDiffuse;
 
-out vec3 v_normal;
+out vec4 v_color;
 
 void main () {
-  v_normal = a_normal;
+  vec3 N = vec3(u_normalMatrix * vec4(a_vertexNormal, 1.0));
+  vec3 L = normalize(u_lightDirection);
+  float lambertTerm = dot(N, -L);
+
+  vec4 Ia = u_lightAmbient;
+  vec4 Id = u_materialDiffuse * u_lightDiffuse * lambertTerm;
+
+  v_color = vec4(vec3(Ia + Id), 1.0);
   gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
 }
 `;
@@ -22,18 +34,11 @@ void main () {
 const fShader = `#version 300 es
 precision highp float;
 
-in vec3 v_normal; 
-
-uniform vec3 u_reverseLightDir;
-uniform vec4 u_color;
-
+in vec4 v_color;
 out vec4 color;
 
 void main () {
-  vec3 normal = normalize(v_normal);
-  float light = dot(normal, u_reverseLightDir);
-  color = u_color;
-  color *= light;
+  color = v_color;
 }
 `;
 
@@ -90,15 +95,23 @@ void main () {
   let posizione = {
     attrs: {
       a_position: gl.getAttribLocation(program, 'a_position'),
-      a_normal: gl.getAttribLocation(program, 'a_normal'),
+      a_normal: gl.getAttribLocation(program, 'a_vertexNormal'),
     },
     uniforms: {
       u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
       u_modelViewMatrix: gl.getUniformLocation(program, 'u_modelViewMatrix'),
-      u_color: gl.getUniformLocation(program, 'u_color'),
-      u_reverseLightDir: gl.getUniformLocation(program, 'u_reverseLightDir'),
+      u_normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
+      u_lightDirection: gl.getUniformLocation(program, 'u_lightDirection'),
+      u_lightAmbient: gl.getUniformLocation(program, 'u_lightAmbient'),
+      u_lightDiffuse: gl.getUniformLocation(program, 'u_lightDiffuse'),
+      u_materialDiffuse: gl.getUniformLocation(program, 'u_materialDiffuse'),
     }
   }
+
+  gl.uniform3fv(posizione.uniforms.u_lightDirection, [0, 0, -1]);
+  gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.01, 0.01, 0.01, 1]);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [0.75, 0.75, 0.75, 1]);
+  gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.34, 0.6, 0.7, 1);
 
   let vertexPosBuffer = gl.createBuffer();  
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
@@ -109,9 +122,6 @@ void main () {
   let indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
-  gl.uniform4fv(posizione.uniforms.u_color, [0.5, 0.4, 0.9, 1.0]);
-  gl.uniform3fv(posizione.uniforms.u_reverseLightDir, vec3.normalize(vec3.create(), [0.5, 0.3, 0.9]));
 
   const vertexNormals = [
     // Front
@@ -148,19 +158,26 @@ void main () {
   const fov = 45 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
         zNear = 0.1,
-        zFar = 100.0,
+        zFar = 10000.0,
         projectionMatrix = mat4.create();
 
   mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
   const modelViewMatrix = mat4.create();
-  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -10.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.5, [1, 0, 0]);
+  mat4.identity(modelViewMatrix);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -9.0]);
+  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.4, [1, 0, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0.9, [0, 1, 0]);
   mat4.rotate(modelViewMatrix, modelViewMatrix, 0, [0, 1, 0]);
 
+  const normalMatrix = mat4.create();
+  mat4.copy(normalMatrix, modelViewMatrix);
+  mat4.invert(normalMatrix, normalMatrix);
+  mat4.transpose(normalMatrix, normalMatrix);
+
   gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
   gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+  gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
 
 
