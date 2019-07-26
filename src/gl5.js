@@ -145,7 +145,7 @@ void main () {
     }
   }
 
-  gl.uniform1f(posizione.uniforms.u_shine, 5);
+  gl.uniform1f(posizione.uniforms.u_shine, 9);
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.03, 0.02, 0.02, 1]);
   gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
