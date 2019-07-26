@@ -32,9 +32,13 @@ function createProgram (gl, vertexShader, fragmentShader) {
 }
 
 function createProgramWithShaders(gl, vShaderSource, fShaderSource) {
-  let vertexShader = createShader(gl, vShaderSource, gl.VERTEX_SHADER),
-      fragmentShader = createShader(gl, fShaderSource, gl.FRAGMENT_SHADER),
-      program = createProgram(gl, vertexShader, fragmentShader);
+  let vertexShader = createShader(gl, vShaderSource, gl.VERTEX_SHADER);
+  console.log('vertex shader compiled');
+
+  let fragmentShader = createShader(gl, fShaderSource, gl.FRAGMENT_SHADER);
+  console.log('fragment shader compiled');
+  
+  let program = createProgram(gl, vertexShader, fragmentShader);
   
   gl.deleteShader(vertexShader);
   gl.deleteShader(fragmentShader);
