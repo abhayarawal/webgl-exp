@@ -39,6 +39,7 @@ out vec4 color;
 
 void main () {
   color = v_color;
+  // color = vec4(0.3, 0.5, 0.8, 1.);
 }
 `;
 
@@ -124,7 +125,7 @@ void main () {
 
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [0, 0, -1]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.01, 0.01, 0.01, 1]);
-  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [0.9, 0.9, 0.9, 1]);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.7, 1.7, 1.7, 1]);
   gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.3, 0.5, 0.8, 1);
 
   let vertexPosBuffer = gl.createBuffer();  
@@ -181,52 +182,68 @@ void main () {
   gl.enableVertexAttribArray(posizione.attrs.a_normal);
   gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
 
-  const fov = 45 * Math.PI / 180, // radians
+  var fov = 45 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
         zNear = 0.1,
         zFar = 10000.0,
-        projectionMatrix = mat4.create();
+        cubeRotation = 0.5;
 
-  mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
+  function draw (deltaTime) {
+    const projectionMatrix = mat4.create();
 
-  const modelViewMatrix = mat4.create();
-  mat4.identity(modelViewMatrix);
-  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -7.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.5, [1, 0, 0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, 0.7, [0, 1, 0]);
+    mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
-  const normalMatrix = mat4.create();
-  mat4.copy(normalMatrix, modelViewMatrix);
-  mat4.invert(normalMatrix, normalMatrix);
-  mat4.transpose(normalMatrix, normalMatrix);
+    const modelViewMatrix = mat4.create();
+    mat4.identity(modelViewMatrix);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -7.0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [1, 0, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 1, 0]);
 
-  gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
-  gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
-  gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
+    const normalMatrix = mat4.create();
+    mat4.copy(normalMatrix, modelViewMatrix);
+    mat4.invert(normalMatrix, normalMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
 
-
-
-
-  gl.clearColor(0.9, 0.9, 0.9, 1);
-  gl.clearDepth(100);
-  gl.enable(gl.DEPTH_TEST);
-  // gl.enable(gl.CULL_FACE);
-  gl.depthFunc(gl.LEQUAL);
-
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
 
+    gl.clearColor(0.9, 0.9, 0.9, 1);
+    gl.clearDepth(100);
+    gl.enable(gl.DEPTH_TEST);
+    // gl.enable(gl.CULL_FACE);
+    gl.depthFunc(gl.LEQUAL);
 
-  // Clean up
-  gl.bindVertexArray(null);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // Delete WebGL resources
-  gl.deleteBuffer(vertexPosBuffer);
-  gl.deleteBuffer(indexBuffer);
-  gl.deleteProgram(program);
-  gl.deleteVertexArray(vao);
+    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+
+    cubeRotation += deltaTime;
+  }
+
+  var then = 0;
+  function render (now) {
+    now *= 0.001;
+    const deltaTime = now - then;
+    then = now;
+    draw(deltaTime);
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+
+  function destroy () {
+    // Clean up
+    gl.bindVertexArray(null);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    // Delete WebGL resources
+    gl.deleteBuffer(vertexPosBuffer);
+    gl.deleteBuffer(indexBuffer);
+    gl.deleteProgram(program);
+    gl.deleteVertexArray(vao);
+  }
+
 })()
