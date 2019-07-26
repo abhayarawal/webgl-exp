@@ -125,8 +125,8 @@ void main () {
 
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [0, 0, -1]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.01, 0.01, 0.01, 1]);
-  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.7, 1.7, 1.7, 1]);
-  gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.3, 0.5, 0.8, 1);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.5, 1.5, 1.5, 1]);
+  gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.2, 0.5, 0.8, 1);
 
   let vertexPosBuffer = gl.createBuffer();  
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
@@ -182,20 +182,19 @@ void main () {
   gl.enableVertexAttribArray(posizione.attrs.a_normal);
   gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
 
-  var fov = 45 * Math.PI / 180, // radians
-        aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
-        zNear = 0.1,
-        zFar = 10000.0,
-        cubeRotation = 0.5;
+  var fov = 55 * Math.PI / 180, // radians
+      aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
+      zNear = 0.1,
+      zFar = 10000.0,
+      cubeRotation = 0.5;
+  
+  const projectionMatrix = mat4.create();
+  mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
   function draw (deltaTime) {
-    const projectionMatrix = mat4.create();
-
-    mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
-
     const modelViewMatrix = mat4.create();
     mat4.identity(modelViewMatrix);
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -7.0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -5.0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 1, 0]);
 
