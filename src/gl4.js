@@ -1,5 +1,6 @@
 import { vec3, mat4 } from 'gl-matrix';
 import { createProgramWithShaders } from './utility/common';
+import { bunnyModel } from './data/bunny';
 
 const vShader = `#version 300 es
 precision highp float;
@@ -125,18 +126,18 @@ void main () {
 
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [0, 0, -1]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.01, 0.01, 0.01, 1]);
-  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.5, 1.5, 1.5, 1]);
-  gl.uniform4f(posizione.uniforms.u_materialDiffuse, 0.2, 0.5, 0.8, 1);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
+  gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [5/256, 230/256, 211/256, 1]);
 
   let vertexPosBuffer = gl.createBuffer();  
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(position), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, bunnyModel.positions, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(posizione.attrs.a_position);
   gl.vertexAttribPointer(posizione.attrs.a_position, 3, gl.FLOAT, false, 0, 0);
 
   let indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, bunnyModel.elements, gl.STATIC_DRAW);
 
   const vertexNormals = [
     // Front
@@ -178,7 +179,7 @@ void main () {
 
   let normalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, bunnyModel.vertexNormals, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(posizione.attrs.a_normal);
   gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
 
@@ -194,8 +195,8 @@ void main () {
   function draw (deltaTime) {
     const modelViewMatrix = mat4.create();
     mat4.identity(modelViewMatrix);
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -5.0]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [1, 0, 0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -5.0, -20.0]);
+    // mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 1, 0]);
 
     const normalMatrix = mat4.create();
@@ -216,7 +217,7 @@ void main () {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, bunnyModel.elements.length, gl.UNSIGNED_SHORT, 0);
 
     cubeRotation += deltaTime;
   }

@@ -99,15 +99,15 @@ void main () {
     }
   }
 
-  gl.uniform1f(posizione.uniforms.u_shine, 9);
+  gl.uniform1f(posizione.uniforms.u_shine, 12);
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.03, 0.02, 0.02, 1]);
   gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
   gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
   
-  gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [0.2, 0.6, 0.9, 1]);
+  gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [5/256, 230/256, 211/256, 1]);
   gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-  gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1, 1, 1, 1]);
+  gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
 
 
 
@@ -132,7 +132,7 @@ void main () {
       aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
       zNear = 0.1,
       zFar = 10000.0,
-      cubeRotation = 0.5;
+      cubeRotation = 0.9;
   
   const projectionMatrix = mat4.create();
   mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
