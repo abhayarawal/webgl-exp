@@ -59,7 +59,7 @@ void main () {
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
-  color = vec4(N, 1.);
+  // color = vec4(N, 1.);
 }
 `;
 
@@ -136,17 +136,23 @@ void main () {
       zFar = 10000.0,
       cubeRotation = 0.9;
   
-  const projectionMatrix = mat4.create();
+  const projectionMatrix = mat4.create(),
+        cameraMatrix = mat4.create(),
+        modelViewMatrix = mat4.create(),
+        normalMatrix = mat4.create();
   mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
   function draw (deltaTime) {
-    const modelViewMatrix = mat4.create();
-    mat4.identity(modelViewMatrix);
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -5.0, -15.0]);
-    // mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [1, 0, 0]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 1, 0]);
+    mat4.identity(cameraMatrix);
+    mat4.translate(cameraMatrix, cameraMatrix, [0.0, .0, 15.0]);
+    // mat4.rotate(cameraMatrix, cameraMatrix, cubeRotation, [0, 0, 1]);
 
-    const normalMatrix = mat4.create();
+    mat4.identity(modelViewMatrix);
+    mat4.invert(modelViewMatrix, cameraMatrix);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -5.0, 0.0]);
+    // mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [1, 0, 0]);
+    // mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 0, 1]);
+
     mat4.copy(normalMatrix, modelViewMatrix);
     mat4.invert(normalMatrix, normalMatrix);
     mat4.transpose(normalMatrix, normalMatrix);

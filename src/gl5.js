@@ -175,7 +175,7 @@ void main () {
     const deltaTime = now - then;
     then = now;
     draw(deltaTime);
-    // requestAnimationFrame(render);
+    requestAnimationFrame(render);
   }
 
   requestAnimationFrame(render);
