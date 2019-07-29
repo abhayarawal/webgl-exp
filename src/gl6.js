@@ -59,7 +59,7 @@ void main () {
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
-  // color = vec4(N, 1.);
+  color = vec4(N, 1.);
 }
 `;
 
@@ -175,7 +175,7 @@ void main () {
     const deltaTime = now - then;
     then = now;
     draw(deltaTime);
-    // requestAnimationFrame(render);
+    requestAnimationFrame(render);
   }
 
   requestAnimationFrame(render);
