@@ -1,4 +1,4 @@
-import { vec3, mat4 } from 'gl-matrix';
+import { mat4, quat, quat2 } from 'gl-matrix';
 import { createProgramWithShaders } from './utility/common';
 import { bunnyModel } from './data/bunny';
 import * as dat from 'dat.gui';
@@ -60,10 +60,9 @@ void main () {
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
-  // color = vec4(N, 1.);
+  color = vec4(N, 1.);
 }
 `;
-
 
 
 (function () {
@@ -171,15 +170,16 @@ void main () {
   mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
   function draw (deltaTime) {
-    mat4.identity(modelMatrix);
-    mat4.translate(modelMatrix, modelMatrix, [0, -4, -15]);
-    mat4.rotate(modelMatrix, modelMatrix, cubeRotation, [0, 1, 0]);
-
+    let q = quat2.create();
+    quat2.rotateY(q, q, cubeRotation);
+    mat4.fromRotationTranslation(modelMatrix, q, [0, -5, -15]);
+    
     mat4.identity(cameraMatrix);
-    mat4.translate(cameraMatrix, cameraMatrix, [props.camera.translation.x, props.camera.translation.y, props.camera.translation.z]);
-    mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.x, [1, 0, 0]);
-    mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.y, [0, 1, 0]);
-    mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.z, [0, 0, 1]);
+    let q2 = quat2.create();
+    quat2.rotateX(q2, q2, props.camera.rotation.x);
+    quat2.rotateY(q2, q2, props.camera.rotation.y);
+    quat2.rotateZ(q2, q2, props.camera.rotation.z);
+    mat4.fromRotationTranslation(cameraMatrix, q2, [props.camera.translation.x, props.camera.translation.y, props.camera.translation.z]);
 
     mat4.invert(modelViewMatrix, cameraMatrix);
     mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
