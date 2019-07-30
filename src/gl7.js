@@ -12,19 +12,18 @@ in vec3 a_vertexNormal;
 
 uniform mat4 u_normalMatrix;
 uniform mat4 u_projectionMatrix;
-uniform mat4 u_cameraMatrix;
-uniform mat4 u_modelMatrix;
+uniform mat4 u_modelViewMatrix;
 
 out vec3 v_normal;
 out vec3 v_eyeVector;
 
 void main () {
   // transformed vertex position (euclidean to projective space)
-  vec4 vertex = u_cameraMatrix * u_modelMatrix * a_position; 
+  vec4 vertex = u_modelViewMatrix * a_position; 
 
   v_normal = vec3(u_normalMatrix * vec4(a_vertexNormal, 0.0));
   v_eyeVector = -vec3(vertex.xyz);
-  gl_Position = u_projectionMatrix * u_cameraMatrix * u_modelMatrix * a_position;
+  gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
 }
 `;
 
@@ -114,8 +113,7 @@ void main () {
     },
     uniforms: {
       u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
-      u_modelMatrix: gl.getUniformLocation(program, 'u_modelMatrix'),
-      u_cameraMatrix: gl.getUniformLocation(program, 'u_cameraMatrix'),
+      u_modelViewMatrix: gl.getUniformLocation(program, 'u_modelViewMatrix'),
       u_normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
 
       u_shine: gl.getUniformLocation(program, 'u_shine'),
@@ -177,23 +175,20 @@ void main () {
     mat4.translate(modelMatrix, modelMatrix, [0, -4, -15]);
     mat4.rotate(modelMatrix, modelMatrix, cubeRotation, [0, 1, 0]);
 
-
     mat4.identity(cameraMatrix);
     mat4.translate(cameraMatrix, cameraMatrix, [props.camera.translation.x, props.camera.translation.y, props.camera.translation.z]);
     mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.x, [1, 0, 0]);
     mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.y, [0, 1, 0]);
     mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.z, [0, 0, 1]);
-    // mat4.invert(cameraMatrix)
 
-    mat4.multiply(modelViewMatrix, modelMatrix, cameraMatrix);
+    mat4.invert(modelViewMatrix, cameraMatrix);
+    mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
 
-    mat4.copy(normalMatrix, modelViewMatrix);
-    mat4.invert(normalMatrix, normalMatrix);
+    mat4.invert(normalMatrix, modelViewMatrix);
     mat4.transpose(normalMatrix, normalMatrix);
 
     gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
-    gl.uniformMatrix4fv(posizione.uniforms.u_modelMatrix, false, modelMatrix);
-    gl.uniformMatrix4fv(posizione.uniforms.u_cameraMatrix, false, cameraMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
     gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
 
