@@ -1,6 +1,7 @@
 import { vec3, mat4 } from 'gl-matrix';
 import { createProgramWithShaders } from './utility/common';
 import { bunnyModel } from './data/bunny';
+import * as dat from 'dat.gui';
 
 const vShader = `#version 300 es
 precision highp float;
@@ -11,18 +12,19 @@ in vec3 a_vertexNormal;
 
 uniform mat4 u_normalMatrix;
 uniform mat4 u_projectionMatrix;
-uniform mat4 u_modelViewMatrix;
+uniform mat4 u_cameraMatrix;
+uniform mat4 u_modelMatrix;
 
 out vec3 v_normal;
 out vec3 v_eyeVector;
 
 void main () {
   // transformed vertex position (euclidean to projective space)
-  vec4 vertex = u_modelViewMatrix * a_position; 
+  vec4 vertex = u_cameraMatrix * u_modelMatrix * a_position; 
 
   v_normal = vec3(u_normalMatrix * vec4(a_vertexNormal, 0.0));
   v_eyeVector = -vec3(vertex.xyz);
-  gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
+  gl_Position = u_projectionMatrix * u_cameraMatrix * u_modelMatrix * a_position;
 }
 `;
 
@@ -37,7 +39,6 @@ uniform vec4 u_lightSpecular;
 uniform vec4 u_materialAmbient;
 uniform vec4 u_materialDiffuse;
 uniform vec4 u_materialSpecular;
-uniform mat4 u_normalMatrix;
 
 in vec3 v_normal;
 in vec3 v_eyeVector;
@@ -45,7 +46,6 @@ out vec4 color;
 
 void main () {
   vec3 L = normalize(u_lightDirection);
-  L =  vec3(u_normalMatrix * vec4(L, 0.0));
   vec3 N = normalize(v_normal);
   float lambertTerm = dot(N, -L);
   vec4 Ia = u_lightAmbient * u_materialAmbient;
@@ -65,7 +65,35 @@ void main () {
 }
 `;
 
+
+
 (function () {
+  let props = {
+    camera: {
+      rotation: {
+        x: 0,
+        y: 0,
+        z: 0
+      },
+      translation: {
+        x: 0,
+        y: 0,
+        z: 0
+      }
+    }
+  }
+
+  const gui = new dat.GUI();
+  var cameraR = gui.addFolder('Camera Rotation');
+  cameraR.add(props.camera.rotation, 'x', -10, 10).step(0.001);
+  cameraR.add(props.camera.rotation, 'y', -10, 10).step(0.001);
+  cameraR.add(props.camera.rotation, 'z', -10, 10).step(0.001);
+
+  var cameraT = gui.addFolder('Camera Translation');
+  cameraT.add(props.camera.translation, 'x', -30, 30).step(0.01);
+  cameraT.add(props.camera.translation, 'y', -30, 30).step(0.01);
+  cameraT.add(props.camera.translation, 'z', -30, 30).step(0.01);
+
 
   const canvas = document.getElementById('webgl-canvas'),
         gl = canvas.getContext('webgl2');
@@ -86,7 +114,8 @@ void main () {
     },
     uniforms: {
       u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
-      u_modelViewMatrix: gl.getUniformLocation(program, 'u_modelViewMatrix'),
+      u_modelMatrix: gl.getUniformLocation(program, 'u_modelMatrix'),
+      u_cameraMatrix: gl.getUniformLocation(program, 'u_cameraMatrix'),
       u_normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
 
       u_shine: gl.getUniformLocation(program, 'u_shine'),
@@ -137,30 +166,34 @@ void main () {
       cubeRotation = 0.9;
   
   const projectionMatrix = mat4.create(),
+        modelMatrix = mat4.create(),
         cameraMatrix = mat4.create(),
         modelViewMatrix = mat4.create(),
         normalMatrix = mat4.create();
   mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
   function draw (deltaTime) {
+    mat4.identity(modelMatrix);
+    mat4.translate(modelMatrix, modelMatrix, [0, -4, -15]);
+    mat4.rotate(modelMatrix, modelMatrix, cubeRotation, [0, 1, 0]);
+
+
     mat4.identity(cameraMatrix);
-    mat4.translate(cameraMatrix, cameraMatrix, [0.0, 0.0, +document.getElementById('t').value]);
-    mat4.rotate(cameraMatrix, cameraMatrix, +document.getElementById('x').value, [1, 0, 0]);
-    mat4.rotate(cameraMatrix, cameraMatrix, +document.getElementById('y').value, [0, 1, 0]);
-    mat4.rotate(cameraMatrix, cameraMatrix, +document.getElementById('z').value, [0, 0, 1]);
+    mat4.translate(cameraMatrix, cameraMatrix, [props.camera.translation.x, props.camera.translation.y, props.camera.translation.z]);
+    mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.x, [1, 0, 0]);
+    mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.y, [0, 1, 0]);
+    mat4.rotate(cameraMatrix, cameraMatrix, props.camera.rotation.z, [0, 0, 1]);
+    // mat4.invert(cameraMatrix)
 
-    mat4.identity(modelViewMatrix);
-    mat4.invert(modelViewMatrix, cameraMatrix);
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, -5.0, -0.0]);
-    // mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 1, 0]);
-    // mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 0, 1]);
+    mat4.multiply(modelViewMatrix, modelMatrix, cameraMatrix);
 
-    // mat4.copy(normalMatrix, modelViewMatrix);
-    // mat4.invert(normalMatrix, normalMatrix);
-    mat4.transpose(normalMatrix, cameraMatrix);
+    mat4.copy(normalMatrix, modelViewMatrix);
+    mat4.invert(normalMatrix, normalMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
 
     gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
-    gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_modelMatrix, false, modelMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_cameraMatrix, false, cameraMatrix);
     gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
 
