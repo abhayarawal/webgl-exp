@@ -60,7 +60,7 @@ void main () {
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
-  color = vec4(N, 1.);
+  // color = vec4(N, 1.);
 }
 `;
 
@@ -170,9 +170,18 @@ void main () {
   mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
   function draw (deltaTime) {
+    gl.clearColor(0.9, 0.9, 0.9, 1);
+    gl.clearDepth(100);
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.CULL_FACE);
+    gl.depthFunc(gl.LEQUAL);
+
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
     let q = quat2.create();
     quat2.rotateY(q, q, cubeRotation);
-    mat4.fromRotationTranslation(modelMatrix, q, [0, -5, -15]);
+    mat4.fromRotationTranslation(modelMatrix, q, [-5, -5, -20]);
     
     mat4.identity(cameraMatrix);
     let q2 = quat2.create();
@@ -191,14 +200,28 @@ void main () {
     gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
     gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
+    gl.drawElements(gl.TRIANGLES, bunnyModel.elements.length, gl.UNSIGNED_SHORT, 0);
 
-    gl.clearColor(0.9, 0.9, 0.9, 1);
-    gl.clearDepth(100);
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
-    gl.depthFunc(gl.LEQUAL);
+    q = quat2.create();
+    quat2.rotateY(q, q, -cubeRotation*0.2);
+    mat4.fromRotationTranslation(modelMatrix, q, [5, -5, -20]);
+    
+    mat4.identity(cameraMatrix);
+    q2 = quat2.create();
+    quat2.rotateX(q2, q2, props.camera.rotation.x);
+    quat2.rotateY(q2, q2, props.camera.rotation.y);
+    quat2.rotateZ(q2, q2, props.camera.rotation.z);
+    mat4.fromRotationTranslation(cameraMatrix, q2, [props.camera.translation.x, props.camera.translation.y, props.camera.translation.z]);
 
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    mat4.invert(modelViewMatrix, cameraMatrix);
+    mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
+
+    mat4.invert(normalMatrix, modelViewMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
+
+    gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+    gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
     gl.drawElements(gl.TRIANGLES, bunnyModel.elements.length, gl.UNSIGNED_SHORT, 0);
 

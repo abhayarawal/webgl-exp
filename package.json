@@ -12,6 +12,7 @@
     "dat.gui": "^0.7.6",
     "gl-matrix": "^3.0.0",
     "picogl": "^0.14.0",
-    "reason-react": "^0.7.0"
+    "reason-react": "^0.7.0",
+    "rxjs": "^6.5.2"
   }
 }
