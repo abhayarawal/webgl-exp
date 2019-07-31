@@ -224,23 +224,34 @@ var updateMeshes = () => {
 }
 
 var drawMesh = ( mesh ) => {
-
+  let state = sceneGraph.snapshot(),
+      gl = state.get('gl'),
+      material = sceneGraph.snapshot().getIn(['materials', mesh.matRef]);
+  
+  
 }
 
 
-let entities$ = sceneGraph.select('entities')
+let gl$ = sceneGraph.select('gl');
+let entities$ = sceneGraph.select('entities');
 
 interval(500, animationFrameScheduler)
 .pipe(
-  withLatestFrom(entities$),
+  withLatestFrom(gl$, entities$),
   take(5)
 )
-.subscribe(([_, entities]) => {
+.subscribe(([_, gl, entities]) => {
+  gl.clearColor(0.9, 0.9, 0.9, 1);
+  gl.clearDepth(100);
+  gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.depthFunc(gl.LEQUAL);
+
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   entities.get('meshes').map(mesh => {
-    console.log(mesh);
+    drawMesh(mesh);
   })
-
 });
 
 
