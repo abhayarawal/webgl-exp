@@ -11,6 +11,7 @@
   "dependencies": {
     "dat.gui": "^0.7.6",
     "gl-matrix": "^3.0.0",
+    "immutable": "^4.0.0-rc.12",
     "picogl": "^0.14.0",
     "reason-react": "^0.7.0",
     "rxjs": "^6.5.2"

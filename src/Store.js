@@ -1,9 +1,9 @@
 import { BehaviorSubject } from 'rxjs';
 import { map, distinctUntilChanged } from 'rxjs/operators';
-
+import { fromJS } from 'immutable';
 
 function StoreFactory ( initialValue ) {
-  let store$ = new BehaviorSubject(initialValue);
+  let store$ = new BehaviorSubject(fromJS(initialValue));
 
   let store = () => {
     return store$
@@ -14,16 +14,19 @@ function StoreFactory ( initialValue ) {
   }
 
   let setState = (partial) => {
-    let state = store$.getValue(),
-        nextState = Object.assign({}, state, partial);
+    let nextState = store$.getValue().merge(partial);
+    store$.next(nextState);
+  }
 
+  let setStateIn = (route, value) => {
+    let nextState = store$.getValue().setIn(route, value);
     store$.next(nextState);
   }
 
   let select = (k) => {
     return store$.pipe(
       map((state) => {
-        return state[k]
+        return state.get(k)
       }),
       distinctUntilChanged()
     )
@@ -32,6 +35,7 @@ function StoreFactory ( initialValue ) {
   return Object.freeze({
     store,
     snapshot,
+    setStateIn,
     setState,
     select
   })
