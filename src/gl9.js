@@ -65,8 +65,7 @@ void main () {
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
-  color = vec4(N, 1.);
-  // color = vec4(1.);
+  // color = vec4(N, 1.);
 }
 `;
 
@@ -121,7 +120,7 @@ var createMesh = (model, translation, rotation) => {
 
   let vertexNormalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexNormalBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, vertexNormals, gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, vertexNormals, gl.STATIC_DRAW);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
@@ -241,15 +240,12 @@ var drawMesh = ( mesh ) => {
   gl.bindVertexArray(vao);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffers.vertexPositionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, mesh.model.positions, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(attrs.a_position);
   gl.vertexAttribPointer(attrs.a_position, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.buffers.idxBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.model.elements, gl.STATIC_DRAW);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffers.vertexNormalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, mesh.model.vertexNormals, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(attrs.a_normal);
   gl.vertexAttribPointer(attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
 
@@ -293,7 +289,7 @@ let entities$ = sceneGraph.select('entities');
 interval(0, animationFrameScheduler)
 .pipe(
   withLatestFrom(gl$, entities$),
-  // take(1)
+  take(5)
 )
 .subscribe(([_, gl, entities]) => {
   gl.clearColor(0.9, 0.9, 0.9, 1);
@@ -312,10 +308,10 @@ interval(0, animationFrameScheduler)
 
 
 
-let mesh = createMesh(bunnyModel, [0, -5, -20], [0, 0, 0]),
-    mesh2 = createMesh(cube, [-10, 0, -19], [0.5,0,0]),
+let mesh = createMesh(bunnyModel, [2, -5, -20], [0, 0, 0]),
+    // mesh2 = createMesh(cube, [-5, 0, -9], [0.5, 0, 0]),
     material = createShaderMaterial(vShader, fShader);
     
 createCamera([0, 0, 0], [0, 0, 0]);
 attachMaterialToMesh(mesh, material);
-attachMaterialToMesh(mesh2, material);
+// attachMaterialToMesh(mesh2, material);
