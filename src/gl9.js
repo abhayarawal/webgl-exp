@@ -5,6 +5,7 @@ import { createProgramWithShaders } from './utility/common';
 import { StoreFactory } from './Store';
 
 import { bunnyModel } from './data/bunny';
+import { cube } from './data/cube';
 
 
 const vShader = `#version 300 es
@@ -65,7 +66,7 @@ void main () {
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
   color = vec4(N, 1.);
-  color = vec4(1.);
+  // color = vec4(1.);
 }
 `;
 
@@ -108,7 +109,7 @@ var createMesh = (model, translation, rotation) => {
   let state = sceneGraph.snapshot(),
       gl = state.get('gl'),
       ref = newRef(),
-      { positions, elements, vertexNormals }  = model;
+      { positions, elements, vertexNormals } = model;
       
   let vertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
@@ -141,7 +142,8 @@ var createMesh = (model, translation, rotation) => {
     position: {
       translation,
       rotation
-    }
+    },
+    model
   };
 
   sceneGraph.setStateIn(['entities', 'meshes', ref], mesh);
@@ -238,14 +240,16 @@ var drawMesh = ( mesh ) => {
   let vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
 
-
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffers.vertexPositionBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, mesh.model.positions, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(attrs.a_position);
   gl.vertexAttribPointer(attrs.a_position, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.buffers.idxBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.model.elements, gl.STATIC_DRAW);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffers.vertexNormalBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, mesh.model.vertexNormals, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(attrs.a_normal);
   gl.vertexAttribPointer(attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
 
@@ -273,10 +277,12 @@ var drawMesh = ( mesh ) => {
   gl.uniformMatrix4fv(uniforms.u_normalMatrix, false, normalMatrix);
 
   gl.drawElements(gl.TRIANGLES, idxLength, gl.UNSIGNED_SHORT, 0);
+    
 
   gl.bindVertexArray(null);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  gl.deleteVertexArray(vao);
 }
 
 
@@ -287,7 +293,7 @@ let entities$ = sceneGraph.select('entities');
 interval(0, animationFrameScheduler)
 .pipe(
   withLatestFrom(gl$, entities$),
-  take(3)
+  // take(1)
 )
 .subscribe(([_, gl, entities]) => {
   gl.clearColor(0.9, 0.9, 0.9, 1);
@@ -307,7 +313,9 @@ interval(0, animationFrameScheduler)
 
 
 let mesh = createMesh(bunnyModel, [0, -5, -20], [0, 0, 0]),
-    material = createShaderMaterial(vShader, fShader),
-    camera = createCamera([0, 0, 0], [0, 0, 0]);
-
+    mesh2 = createMesh(cube, [-10, 0, -19], [0.5,0,0]),
+    material = createShaderMaterial(vShader, fShader);
+    
+createCamera([0, 0, 0], [0, 0, 0]);
 attachMaterialToMesh(mesh, material);
+attachMaterialToMesh(mesh2, material);
