@@ -107,6 +107,10 @@ var createMesh = (model, translation = [0, 0, 0], rotation = [0, 0, 0]) => {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elements, gl.STATIC_DRAW);
 
+  let vertexNormalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexNormalBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, vertexNormals, gl.STATIC_DRAW);
+
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
@@ -121,10 +125,10 @@ var createMesh = (model, translation = [0, 0, 0], rotation = [0, 0, 0]) => {
 
   let mesh = {
     render: true,
-    vertexNormals,
     buffers: {
       vertexPositionBuffer,
-      idxBuffer
+      idxBuffer,
+      vertexNormalBuffer
     },
     modelMat4
   };
@@ -133,13 +137,37 @@ var createMesh = (model, translation = [0, 0, 0], rotation = [0, 0, 0]) => {
   return ref;
 }
 
-var createShaderMaterial = (vertexSource, fragSource, uniforms = {}) => {
+var createShaderMaterial = (vertexSource, fragSource) => {
   let state = sceneGraph.snapshot(),
       gl = state.get('gl'),
       ref = newRef(),
       program = createProgramWithShaders(gl, vertexSource, fragSource);
   
-  sceneGraph.setStateIn(['materials', ref], program);
+  let attrs = {
+    a_position: gl.getAttribLocation(program, 'a_position'),
+    a_normal: gl.getAttribLocation(program, 'a_vertexNormal'),
+  };
+
+  let uniforms = {
+    u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
+    u_modelViewMatrix: gl.getUniformLocation(program, 'u_modelViewMatrix'),
+    u_normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
+
+    u_shine: gl.getUniformLocation(program, 'u_shine'),
+    u_lightDirection: gl.getUniformLocation(program, 'u_lightDirection'),
+    u_lightAmbient: gl.getUniformLocation(program, 'u_lightAmbient'),
+    u_lightDiffuse: gl.getUniformLocation(program, 'u_lightDiffuse'),
+    u_lightSpecular: gl.getUniformLocation(program, 'u_lightSpecular'),
+
+    u_materialAmbient: gl.getUniformLocation(program, 'u_materialAmbient'),
+    u_materialDiffuse: gl.getUniformLocation(program, 'u_materialDiffuse'),
+    u_materialSpecular: gl.getUniformLocation(program, 'u_materialSpecular')
+  }
+
+  sceneGraph.setStateIn(['materials', ref], {
+    program, attrs, uniforms
+  });
+
   return ref;
 }
 
@@ -152,7 +180,7 @@ var attachMaterialToMesh = (meshRef, matRef) => {
     mesh = { ...mesh, matRef };
     sceneGraph.setStateIn(['entities', 'meshes', meshRef], mesh);
   } else {
-    throw `mesh ${meshId} does not exist`;
+    throw `mesh ${ meshRef } does not exist`;
   }
 }
 
@@ -191,10 +219,6 @@ interval(500, animationFrameScheduler)
   })
 
 });
-
-// mesh - buffer[attrs]; 
-
-
 
 
 
