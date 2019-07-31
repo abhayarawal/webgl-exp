@@ -76,14 +76,12 @@ var sceneGraphInitial = {
   gl,
   entities: {
     meshes: {
-    },
-    cameras: {
-
     }
   },
   materials: {
 
-  }
+  },
+  camera: {}
 };
 
 var sceneGraph = StoreFactory(sceneGraphInitial);
@@ -92,8 +90,19 @@ var newRef = () => {
   return (+new Date()).toString(16) + '.' + (Math.random() * 10000000 | 0).toString(16);
 }
 
+var matFromQuat = (translation = [0, 0, 0], rotation = [0, 0, 0]) => {
+  let modelMat4 = mat4.create(),
+      q = quat2.create(),
+      [x, y, z] = rotation;
 
-var createMesh = (model, translation = [0, 0, 0], rotation = [0, 0, 0]) => {
+  quat2.rotateX(q, q, x);
+  quat2.rotateY(q, q, x);
+  quat2.rotateZ(q, q, x);
+  return mat4.fromRotationTranslation(modelMat4, q, translation);
+}
+
+
+var createMesh = (model, translation, rotation) => {
   let state = sceneGraph.snapshot(),
       gl = state.get('gl'),
       ref = newRef(),
@@ -114,14 +123,7 @@ var createMesh = (model, translation = [0, 0, 0], rotation = [0, 0, 0]) => {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-  let modelMat4 = mat4.create(),
-      q = quat2.create(),
-      [x, y, z] = rotation;
-  
-  quat2.rotateX(q, q, x);
-  quat2.rotateY(q, q, x);
-  quat2.rotateZ(q, q, x);
-  mat4.fromRotationTranslation(modelMat4, q, translation);
+  let modelMat4 = matFromQuat(translation, rotation);
 
   let mesh = {
     render: true,
@@ -130,12 +132,18 @@ var createMesh = (model, translation = [0, 0, 0], rotation = [0, 0, 0]) => {
       idxBuffer,
       vertexNormalBuffer
     },
-    modelMat4
+    modelMat4,
+    position: {
+      translation,
+      rotation
+    }
   };
 
   sceneGraph.setStateIn(['entities', 'meshes', ref], mesh);
   return ref;
 }
+
+
 
 var createShaderMaterial = (vertexSource, fragSource) => {
   let state = sceneGraph.snapshot(),
@@ -185,13 +193,28 @@ var attachMaterialToMesh = (meshRef, matRef) => {
 }
 
 
-var setUpCamera = () => {
-  var {gl} = sceneGraph.snapshot(),
+var createCamera = (translation, rotation) => {
+  var gl = sceneGraph.snapshot().get('gl'),
       fov = 55 * Math.PI / 180,
       aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
       zNear = 0.1,
-      zFar = 10000.0,
-      cubeRotation = 0.9;
+      zFar = 10000.0;
+  
+  let projectionMatrix = mat4.create();
+  mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
+
+  let cameraMatrix = matFromQuat(translation, rotation);
+
+  let camera = {
+    projectionMatrix,
+    cameraMatrix,
+    position: {
+      translation,
+      rotation
+    }
+  }
+
+  sceneGraph.setStateIn(['camera'], camera);
 }
 
 
@@ -224,6 +247,7 @@ interval(500, animationFrameScheduler)
 
 
 let mesh = createMesh(bunnyModel),
-    material = createShaderMaterial(vShader, fShader);
+    material = createShaderMaterial(vShader, fShader),
+    camera = createCamera([0, 0, 0], [0, 0, 0]);
     
 attachMaterialToMesh(mesh, material);
