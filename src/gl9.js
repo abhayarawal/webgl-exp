@@ -141,8 +141,7 @@ var createMesh = (model, translation, rotation) => {
     position: {
       translation,
       rotation
-    },
-    model
+    }
   };
 
   sceneGraph.setStateIn(['entities', 'meshes', ref], mesh);
@@ -264,7 +263,7 @@ var drawMesh = ( mesh ) => {
   gl.uniform4fv(uniforms.u_lightDiffuse, [1, 1, 1, 1]);
   gl.uniform4fv(uniforms.u_lightSpecular, [1, 1, 1, 1]);
   
-  gl.uniform4fv(uniforms.u_materialDiffuse, [5/256, 230/256, 211/256, 1]);
+  gl.uniform4fv(uniforms.u_materialDiffuse, [5/256, 100/256, 211/256, 1]);
   gl.uniform4fv(uniforms.u_materialAmbient, [1, 1, 1, 1]);
   gl.uniform4fv(uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
 
@@ -289,7 +288,7 @@ let entities$ = sceneGraph.select('entities');
 interval(0, animationFrameScheduler)
 .pipe(
   withLatestFrom(gl$, entities$),
-  take(5)
+  // take(5)
 )
 .subscribe(([_, gl, entities]) => {
   gl.clearColor(0.9, 0.9, 0.9, 1);
@@ -309,9 +308,15 @@ interval(0, animationFrameScheduler)
 
 
 let mesh = createMesh(bunnyModel, [2, -5, -20], [0, 0, 0]),
-    // mesh2 = createMesh(cube, [-5, 0, -9], [0.5, 0, 0]),
+    mesh2 = createMesh(cube, [-5, 0, -9], [0.5, 0, 0]),
+    mesh3 = createMesh(bunnyModel, [-3, -5, -25], [0, 0, 0]),
+    mesh4 = createMesh(bunnyModel, [7, -0, -19], [.7, 0, 0]),
+    mesh5 = createMesh(bunnyModel, [-9, 3, -30], [0, 0, 0]),
     material = createShaderMaterial(vShader, fShader);
     
 createCamera([0, 0, 0], [0, 0, 0]);
 attachMaterialToMesh(mesh, material);
-// attachMaterialToMesh(mesh2, material);
+attachMaterialToMesh(mesh2, material);
+attachMaterialToMesh(mesh3, material);
+attachMaterialToMesh(mesh4, material);
+attachMaterialToMesh(mesh5, material);
