@@ -64,7 +64,8 @@ void main () {
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
-  // color = vec4(N, 1.);
+  color = vec4(N, 1.);
+  color = vec4(1.);
 }
 `;
 
@@ -91,14 +92,15 @@ var newRef = () => {
 }
 
 var matFromQuat = (translation = [0, 0, 0], rotation = [0, 0, 0]) => {
-  let modelMat4 = mat4.create(),
+  let matrix = mat4.create(),
       q = quat2.create(),
       [x, y, z] = rotation;
 
   quat2.rotateX(q, q, x);
-  quat2.rotateY(q, q, x);
-  quat2.rotateZ(q, q, x);
-  return mat4.fromRotationTranslation(modelMat4, q, translation);
+  quat2.rotateY(q, q, y);
+  quat2.rotateZ(q, q, z);
+  mat4.fromRotationTranslation(matrix, q, translation);
+  return matrix;
 }
 
 
@@ -123,16 +125,19 @@ var createMesh = (model, translation, rotation) => {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
-  let modelMat4 = matFromQuat(translation, rotation);
+  let modelMatrix = matFromQuat(translation, rotation);
 
   let mesh = {
     render: true,
+    idxLength: elements.length,
     buffers: {
       vertexPositionBuffer,
       idxBuffer,
       vertexNormalBuffer
     },
-    modelMat4,
+    modelMatrix,
+    modelViewMatrix: mat4.create(),
+    normalMatrix: mat4.create(),
     position: {
       translation,
       rotation
@@ -226,19 +231,63 @@ var updateMeshes = () => {
 var drawMesh = ( mesh ) => {
   let state = sceneGraph.snapshot(),
       gl = state.get('gl'),
-      material = sceneGraph.snapshot().getIn(['materials', mesh.matRef]);
+      camera = state.get('camera'),
+      { program, attrs, uniforms } = sceneGraph.snapshot().getIn(['materials', mesh.matRef]);
   
+  gl.useProgram(program);
+  let vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffers.vertexPositionBuffer);
+  gl.enableVertexAttribArray(attrs.a_position);
+  gl.vertexAttribPointer(attrs.a_position, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.buffers.idxBuffer);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffers.vertexNormalBuffer);
+  gl.enableVertexAttribArray(attrs.a_normal);
+  gl.vertexAttribPointer(attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
+
+  let { modelMatrix, modelViewMatrix, normalMatrix, idxLength } = mesh;
+  let { cameraMatrix, projectionMatrix } = camera;
+
+  mat4.invert(modelViewMatrix, cameraMatrix);
+  mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
+
+  mat4.invert(normalMatrix, modelViewMatrix);
+  mat4.transpose(normalMatrix, normalMatrix);
+
+  gl.uniform1f(uniforms.u_shine, 12);
+  gl.uniform3fv(uniforms.u_lightDirection, [-.25, -.25, -.25]);
+  gl.uniform4fv(uniforms.u_lightAmbient, [0.02, 0.02, 0.02, 1]);
+  gl.uniform4fv(uniforms.u_lightDiffuse, [1, 1, 1, 1]);
+  gl.uniform4fv(uniforms.u_lightSpecular, [1, 1, 1, 1]);
   
+  gl.uniform4fv(uniforms.u_materialDiffuse, [5/256, 230/256, 211/256, 1]);
+  gl.uniform4fv(uniforms.u_materialAmbient, [1, 1, 1, 1]);
+  gl.uniform4fv(uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
+
+  gl.uniformMatrix4fv(uniforms.u_projectionMatrix, false, projectionMatrix);
+  gl.uniformMatrix4fv(uniforms.u_modelViewMatrix, false, modelViewMatrix);
+  gl.uniformMatrix4fv(uniforms.u_normalMatrix, false, normalMatrix);
+
+  gl.drawElements(gl.TRIANGLES, idxLength, gl.UNSIGNED_SHORT, 0);
+
+  gl.bindVertexArray(null);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 }
 
 
 let gl$ = sceneGraph.select('gl');
 let entities$ = sceneGraph.select('entities');
 
-interval(500, animationFrameScheduler)
+
+interval(0, animationFrameScheduler)
 .pipe(
   withLatestFrom(gl$, entities$),
-  take(5)
+  take(3)
 )
 .subscribe(([_, gl, entities]) => {
   gl.clearColor(0.9, 0.9, 0.9, 1);
@@ -257,8 +306,8 @@ interval(500, animationFrameScheduler)
 
 
 
-let mesh = createMesh(bunnyModel),
+let mesh = createMesh(bunnyModel, [0, -5, -20], [0, 0, 0]),
     material = createShaderMaterial(vShader, fShader),
     camera = createCamera([0, 0, 0], [0, 0, 0]);
-    
+
 attachMaterialToMesh(mesh, material);
