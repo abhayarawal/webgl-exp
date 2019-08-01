@@ -144,7 +144,7 @@ void main () {
   gl.uniform1f(posizione.uniforms.u_shine, 12);
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
   gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.02, 0.02, 0.02, 1]);
-  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.2, 1.2, 1.2, 1]);
   gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
   
   gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [256/256, 256/256, 256/256, 1]);
@@ -223,7 +223,7 @@ void main () {
 
     let q = quat2.create();
     quat2.rotateY(q, q, cubeRotation);
-    quat2.rotateX(q, q, 0.3);
+    quat2.rotateX(q, q, 0.5);
     mat4.fromRotationTranslation(modelMatrix, q, [0, 0, -4]);
     
     mat4.identity(cameraMatrix);
