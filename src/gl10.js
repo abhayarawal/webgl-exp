@@ -4,7 +4,7 @@ import { bunnyModel } from './data/bunny';
 import { cube } from './data/cube';
 import * as dat from 'dat.gui';
 
-import albedo from './assets/smspdebp_2K_Albedo.jpg';
+import albedo from './assets/sjggaija_2K_Albedo.jpg';
 
 const vShader = `#version 300 es
 precision highp float;
@@ -71,7 +71,6 @@ void main () {
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
   color = color * texture(u_sampler, v_textureCoords);
-  
   // color = vec4(N, 1.);
 }
 `;
@@ -121,6 +120,7 @@ void main () {
     attrs: {
       a_position: gl.getAttribLocation(program, 'a_position'),
       a_normal: gl.getAttribLocation(program, 'a_vertexNormal'),
+      a_vertexTextureCoords: gl.getAttribLocation(program, 'a_vertexTextureCoords'),
     },
     uniforms: {
       u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
@@ -163,6 +163,12 @@ void main () {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cube.elements, gl.STATIC_DRAW);
 
+  let textureBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, cube.textureCoords, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(posizione.attrs.a_vertexTextureCoords);
+  gl.vertexAttribPointer(posizione.attrs.a_vertexTextureCoords, 2, gl.FLOAT, false, 0, 0); 
+
 
   let normalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
@@ -176,10 +182,12 @@ void main () {
   image.onload = () => {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    // gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     
 
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -207,13 +215,16 @@ void main () {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     gl.depthFunc(gl.LEQUAL);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
     let q = quat2.create();
     quat2.rotateY(q, q, cubeRotation);
-    mat4.fromRotationTranslation(modelMatrix, q, [0, 0, -5]);
+    quat2.rotateX(q, q, 0.3);
+    mat4.fromRotationTranslation(modelMatrix, q, [0, 0, -4]);
     
     mat4.identity(cameraMatrix);
     let q2 = quat2.create();
