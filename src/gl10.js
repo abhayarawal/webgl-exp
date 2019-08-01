@@ -55,6 +55,14 @@ in vec2 v_textureCoords;
 
 out vec4 color;
 
+float near = 0.1;
+float far = 100.0;
+
+float linearDepth(float depth) {
+  float z = depth * 2.0 - 1.0;
+  return (2.0 * near * far) / (far + near - z * (far - near));
+}
+
 void main () {
   vec3 L = normalize(u_lightDirection);
   vec3 N = normalize(v_normal);
@@ -67,13 +75,14 @@ void main () {
     Id = u_lightDiffuse * u_materialDiffuse * lambertTerm;
     vec3 E = normalize(v_eyeVector);
     vec3 R = reflect(L, N);
-    float specular = pow( max(dot(R, E), 0.), u_shine );
+    vec3 halfDir = normalize(-L + E);
+    // float specular = pow( max(dot(R, E), 0.), u_shine );
+    float specular = pow(max(dot(halfDir, N), 0.), u_shine);
     Is = u_lightSpecular * u_materialSpecular * specular * texture(u_specular, v_textureCoords);
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
   color = color * texture(u_sampler, v_textureCoords);
-  // color = Is;
   // color = vec4(N, 1.);
 }
 `;
@@ -145,15 +154,15 @@ void main () {
     }
   }
 
-  gl.uniform1f(posizione.uniforms.u_shine, 12);
+  gl.uniform1f(posizione.uniforms.u_shine, 64);
   gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
-  gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.02, 0.02, 0.02, 1]);
-  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.2, 1.2, 1.2, 1]);
+  gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.2, 0.2, 0.2, 1]);
+  gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.0, 1.0, 1.0, 1]);
   gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
   
   gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [256/256, 256/256, 256/256, 1]);
   gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-  gl.uniform4fv(posizione.uniforms.u_materialSpecular, [2.7, 2.7, 2.7, 1]);
+  gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1.0, 1.0, 1.0, 1]);
 
 
 
