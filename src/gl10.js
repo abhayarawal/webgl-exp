@@ -62,7 +62,7 @@ void main () {
   vec4 Is = vec4(0.0, 0.0, 0.0, 1.0);
   
   if (lambertTerm > 0.0) {
-    Id = u_lightDiffuse  * lambertTerm;
+    Id = u_lightDiffuse * u_materialDiffuse * lambertTerm;
     vec3 E = normalize(v_eyeVector);
     vec3 R = reflect(L, N);
     float specular = pow( max(dot(R, E), 0.), u_shine );
@@ -147,7 +147,7 @@ void main () {
   gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
   gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
   
-  gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [5/256, 230/256, 211/256, 1]);
+  gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [256/256, 256/256, 256/256, 1]);
   gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
   gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
 
