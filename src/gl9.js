@@ -140,7 +140,8 @@ var createMesh = (model, translation, rotation) => {
     normalMatrix: mat4.create(),
     position: {
       translation,
-      rotation
+      rotation,
+      r: Math.random()
     }
   };
 
@@ -228,7 +229,7 @@ var updateMeshes = () => {
 
 }
 
-var drawMesh = ( mesh ) => {
+var drawMesh = ( mesh, i ) => {
   let state = sceneGraph.snapshot(),
       gl = state.get('gl'),
       camera = state.get('camera'),
@@ -250,6 +251,8 @@ var drawMesh = ( mesh ) => {
 
   let { modelMatrix, modelViewMatrix, normalMatrix, idxLength } = mesh;
   let { cameraMatrix, projectionMatrix } = camera;
+
+  // modelMatrix = matFromQuat(mesh.position.translation, [0, i*mesh.position.r, 0]);
 
   mat4.invert(modelViewMatrix, cameraMatrix);
   mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
@@ -288,9 +291,10 @@ let entities$ = sceneGraph.select('entities');
 interval(0, animationFrameScheduler)
 .pipe(
   withLatestFrom(gl$, entities$),
-  // take(5)
+  // take(50)
 )
-.subscribe(([_, gl, entities]) => {
+.subscribe(([i, gl, entities]) => {
+
   gl.clearColor(0.9, 0.9, 0.9, 1);
   gl.clearDepth(100);
   gl.enable(gl.DEPTH_TEST);
@@ -299,24 +303,27 @@ interval(0, animationFrameScheduler)
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  i = i*Math.PI/180;
   entities.get('meshes').map(mesh => {
-    drawMesh(mesh);
+    drawMesh(mesh, i);
   })
 });
 
 
 
 
-let mesh = createMesh(bunnyModel, [2, -5, -20], [0, 0, 0]),
+let mesh = createMesh(bunnyModel, [2, -5, -20], [0, 1.0, 0]),
     mesh2 = createMesh(cube, [-5, 0, -9], [0.5, 0, 0]),
     mesh3 = createMesh(bunnyModel, [-3, -5, -25], [0, 0, 0]),
     mesh4 = createMesh(bunnyModel, [7, -0, -19], [.7, 0, 0]),
     mesh5 = createMesh(bunnyModel, [-9, 3, -30], [0, 0, 0]),
     material = createShaderMaterial(vShader, fShader);
     
-createCamera([0, 0, 0], [0, 0, 0]);
+
 attachMaterialToMesh(mesh, material);
 attachMaterialToMesh(mesh2, material);
 attachMaterialToMesh(mesh3, material);
 attachMaterialToMesh(mesh4, material);
 attachMaterialToMesh(mesh5, material);
+
+createCamera([0, 0, 0], [0, 0, 0]);

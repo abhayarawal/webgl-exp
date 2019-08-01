@@ -4,7 +4,8 @@ import { bunnyModel } from './data/bunny';
 import { cube } from './data/cube';
 import * as dat from 'dat.gui';
 
-import albedo from './assets/sjggaija_2K_Albedo.jpg';
+import albedo from './assets/woodmetal/container2.png';
+import specular from './assets/woodmetal/container2_specular.png';
 
 const vShader = `#version 300 es
 precision highp float;
@@ -46,6 +47,7 @@ uniform vec4 u_materialDiffuse;
 uniform vec4 u_materialSpecular;
 
 uniform sampler2D u_sampler;
+uniform sampler2D u_specular;
 
 in vec3 v_normal;
 in vec3 v_eyeVector;
@@ -66,11 +68,12 @@ void main () {
     vec3 E = normalize(v_eyeVector);
     vec3 R = reflect(L, N);
     float specular = pow( max(dot(R, E), 0.), u_shine );
-    Is = u_lightSpecular * u_materialSpecular * specular;
+    Is = u_lightSpecular * u_materialSpecular * specular * texture(u_specular, v_textureCoords);
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
   color = color * texture(u_sampler, v_textureCoords);
+  // color = Is;
   // color = vec4(N, 1.);
 }
 `;
@@ -138,6 +141,7 @@ void main () {
       u_materialSpecular: gl.getUniformLocation(program, 'u_materialSpecular'),
 
       u_sampler: gl.getUniformLocation(program, 'u_sampler'),
+      u_specular: gl.getUniformLocation(program, 'u_specular'),
     }
   }
 
@@ -149,7 +153,7 @@ void main () {
   
   gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [256/256, 256/256, 256/256, 1]);
   gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-  gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
+  gl.uniform4fv(posizione.uniforms.u_materialSpecular, [2.7, 2.7, 2.7, 1]);
 
 
 
@@ -189,11 +193,19 @@ void main () {
     //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     //    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     
-
     gl.bindTexture(gl.TEXTURE_2D, null);
     
   }
 
+  const textureSpec = gl.createTexture();
+  const image2 = new Image();
+  image2.src = specular;
+  image2.onload = () => {
+    gl.bindTexture(gl.TEXTURE_2D, textureSpec);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image2);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
   
 
   var fov = 55 * Math.PI / 180, // radians
@@ -224,6 +236,7 @@ void main () {
     let q = quat2.create();
     quat2.rotateY(q, q, cubeRotation);
     quat2.rotateX(q, q, 0.5);
+    quat2.rotateZ(q, q, cubeRotation);
     mat4.fromRotationTranslation(modelMatrix, q, [0, 0, -4]);
     
     mat4.identity(cameraMatrix);
@@ -242,6 +255,11 @@ void main () {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(posizione.uniforms.u_sampler, 0);
+
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, textureSpec);
+    gl.uniform1i(posizione.uniforms.u_specular, 1);
   
 
     gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
