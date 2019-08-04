@@ -131,7 +131,7 @@ void main () {
     traverseNode(raw.scenes[0].nodes[0]);
 
     // return fetchBuffer(`cube/${raw.buffers[0].uri}`).then(buffer => {
-    return fetchBuffer(`barrel/${raw.buffers[0].uri}`).then(buffer => {
+    return fetchBuffer(`door/${raw.buffers[0].uri}`).then(buffer => {
       let parseBufferType = (dtype, idx) => {
         let accessor = raw.accessors[idx],
             bufferView = raw.bufferViews[accessor.bufferView],
@@ -196,7 +196,7 @@ void main () {
   var loadGltf = () => {
 
     // return fetch(`${rel}cube/cube.gltf.json`)
-    return fetch(`${rel}barrel/scene.gltf.json`)
+    return fetch(`${rel}door/scene.gltf.json`)
     .then(response => {
       return response.json().then(data => {
         return parseGltf(data)
@@ -264,7 +264,7 @@ void main () {
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions.array, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(posizione.attrs.a_position);
-    gl.vertexAttribPointer(posizione.attrs.a_position, 3, gl.FLOAT, false, mesh.positions.stride, mesh.positions.offset);
+    gl.vertexAttribPointer(posizione.attrs.a_position, 3, gl.FLOAT, mesh.positions.normalized, 0, 0); //mesh.positions.stride, mesh.positions.offset);
 
     let indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
@@ -275,7 +275,7 @@ void main () {
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.normals.array, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(posizione.attrs.a_normal);
-    gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, mesh.normals.stride, mesh.normals.offset);
+    gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, mesh.normals.normalized, 0, 0)// mesh.normals.stride, mesh.normals.offset);
 
     var fov = 55 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
@@ -302,7 +302,7 @@ void main () {
 
       let q = quat2.create();
       quat2.rotateY(q, q, cubeRotation);
-      mat4.fromRotationTranslation(modelMatrix, q, [0, 0, -7]);
+      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -20], [0.05, 0.05, 0.05]);
       
       mat4.identity(cameraMatrix);
       let q2 = quat2.create();
