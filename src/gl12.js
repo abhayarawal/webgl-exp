@@ -43,6 +43,7 @@ uniform vec4 u_materialDiffuse;
 uniform vec4 u_materialSpecular;
 
 uniform sampler2D u_diffuse;
+uniform sampler2D u_specular;
 
 in vec3 v_normal;
 in vec3 v_eyeVector;
@@ -61,12 +62,10 @@ void main () {
   if (lambertTerm > 0.0) {
     Id = u_lightDiffuse * u_materialDiffuse * lambertTerm;
     vec3 E = normalize(v_eyeVector);
-    // vec3 R = reflect(L, N);
     vec3 halfDir = normalize(-L + E);
-    // float specular = pow( max(dot(R, E), 0.), u_shine );
     float specular = pow(max(dot(halfDir, N), 0.), u_shine);
-    Is = u_lightSpecular * u_materialSpecular * specular;
-    // Is = u_lightSpecular * u_materialSpecular * specular * texture(u_specular, v_textureCoords);
+    // Is = u_lightSpecular * u_materialSpecular * specular;
+    Is = u_lightSpecular * u_materialSpecular * specular * texture(u_specular, v_textureCoords);
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
@@ -114,7 +113,7 @@ void main () {
   const NORMALS = 2;
   const TEXTCOORDS = 3;
 
-  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/barrel/`;
+  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/door/`;
 
   var newRef = () => {
     return (+new Date()).toString(16) + '.' + (Math.random() * 10000000 | 0).toString(16);
@@ -210,13 +209,34 @@ void main () {
 
           let material = raw.materials[primitive.material],
               { pbrMetallicRoughness } = material,
-              { baseColorTexture } = pbrMetallicRoughness,
-              texture = raw.textures[baseColorTexture.index];
+              transformedMat,
+              diffuse,
+              specular;
+          if (pbrMetallicRoughness) {
+            let { baseColorTexture } = pbrMetallicRoughness;
+            diffuse = raw.textures[baseColorTexture.index];            
+          } else {
+            diffuse = raw.textures[material.extensions.KHR_materials_pbrSpecularGlossiness.diffuseTexture.index];
 
-          let transformedMat = {
+            if (material.extensions.KHR_materials_pbrSpecularGlossiness.specularGlossinessTexture) {
+              specular = raw.textures[material.extensions.KHR_materials_pbrSpecularGlossiness.specularGlossinessTexture.index]
+            }
+          }
+
+          transformedMat = {
             diffuse: {
-              source: raw.images[texture.source].uri,
-              sampler: raw.samplers[texture.sampler]
+              source: raw.images[diffuse.source].uri,
+              sampler: raw.samplers[diffuse.sampler]
+            }
+          }
+
+          if (specular) {
+            transformedMat = {
+              ...transformedMat,
+              specular: {
+                source: raw.images[specular.source].uri,
+                sampler: raw.samplers[specular.sampler] 
+              }
             }
           }
 
@@ -284,6 +304,7 @@ void main () {
         u_materialSpecular: gl.getUniformLocation(program, 'u_materialSpecular'),
 
         u_diffuse: gl.getUniformLocation(program, 'u_diffuse'),
+        u_diffuse: gl.getUniformLocation(program, 'u_specular'),
       }
     }
 
@@ -295,7 +316,7 @@ void main () {
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-    gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1, 1, 1, 1]);
+    gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1.2, 1.2, 1.2, 1]);
 
     console.log(mesh);
 
@@ -322,33 +343,43 @@ void main () {
     gl.enableVertexAttribArray(posizione.attrs.a_normal);
     gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, mesh.normals.normalized, 0, 0)// mesh.normals.stride, mesh.normals.offset);
 
+    var bindImageToTexture = (tex, prop) => {
+      const image = new Image();
+      image.src = `${rel}${prop.source}`;
+      image.crossOrigin = `Anonymous`;
+      image.onload = () => {
+        let { sampler } = prop;
+        // gl.createSampler()
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+        if (sampler.minFilter) {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.NEAREST_MIPMAP_LINEAR);
+        }
+
+        if (sampler.magFilter) {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        }
+        
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
+
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+      }
+    }
+    
     const texture = gl.createTexture();
-    const image = new Image();
-    image.src = `${rel}${mesh.material.diffuse.source}`;
-    image.crossOrigin = `Anonymous`;
-    image.onload = () => {
-      let { sampler } = mesh.material.diffuse;
-      // gl.createSampler()
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-      if (sampler.minFilter) {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
-      } else {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.NEAREST_MIPMAP_LINEAR);
-      }
-
-      if (sampler.magFilter) {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
-      } else {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      }
-      
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
-
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.bindTexture(gl.TEXTURE_2D, null);
+    bindImageToTexture(texture, mesh.material.diffuse);
+    
+    var textureSpec;
+    if (mesh.material.specular) {
+      textureSpec = gl.createTexture();
+      bindImageToTexture(textureSpec, mesh.material.specular);
     }
 
     var fov = 55 * Math.PI / 180, // radians
@@ -375,9 +406,12 @@ void main () {
 
 
       let q = quat2.create();
-      quat2.rotateX(q, q, -1.2);
+      // quat2.rotateX(q, q, -1.3);
+      quat2.rotateX(q, q, -1.5);
+      // quat2.rotateY(q, q, .2);
       quat2.rotateZ(q, q, cubeRotation);
-      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
+      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
+      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
       
       mat4.identity(cameraMatrix);
       let q2 = quat2.create();
@@ -395,6 +429,12 @@ void main () {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.uniform1i(posizione.uniforms.u_diffuse, 0);
+
+      if (mesh.material.specular) {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureSpec);
+        gl.uniform1i(posizione.uniforms.u_specular, 1);
+      }
 
       gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
       gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
