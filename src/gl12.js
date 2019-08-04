@@ -7,17 +7,21 @@ precision highp int;
 
 in vec4 a_position;
 in vec3 a_vertexNormal;
+in vec2 a_vertexTextureCoords;
 
 uniform mat4 u_normalMatrix;
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_modelViewMatrix;
 
+out vec2 v_textureCoords;
 out vec3 v_normal;
 out vec3 v_eyeVector;
 
 void main () {
   // transformed vertex position (euclidean to projective space)
   vec4 vertex = u_modelViewMatrix * a_position; 
+
+  v_textureCoords = a_vertexTextureCoords;
 
   v_normal = vec3(u_normalMatrix * vec4(a_vertexNormal, 0.0));
   v_eyeVector = -vec3(vertex.xyz);
@@ -37,8 +41,12 @@ uniform vec4 u_materialAmbient;
 uniform vec4 u_materialDiffuse;
 uniform vec4 u_materialSpecular;
 
+uniform sampler2D u_diffuse;
+
 in vec3 v_normal;
 in vec3 v_eyeVector;
+in vec2 v_textureCoords;
+
 out vec4 color;
 
 void main () {
@@ -131,7 +139,7 @@ void main () {
     traverseNode(raw.scenes[0].nodes[0]);
 
     // return fetchBuffer(`cube/${raw.buffers[0].uri}`).then(buffer => {
-    return fetchBuffer(`door/${raw.buffers[0].uri}`).then(buffer => {
+    return fetchBuffer(`barrel/${raw.buffers[0].uri}`).then(buffer => {
       let parseBufferType = (dtype, idx) => {
         let accessor = raw.accessors[idx],
             bufferView = raw.bufferViews[accessor.bufferView],
@@ -162,11 +170,23 @@ void main () {
             array = new arrayType(buffer, bufferOffset, accessor.count * TYPE[accessor.type]);
 
         switch (dtype) {
-          case 'indices': // 4
-            return { array, count: accessor.count, ctype: accessor.componentType, offset: accessor.byteOffset || 0 }
-          case 'positions': // 0
-          case 'normals': // 1
-            return { array, stride: bufferView.byteStride || 0, offset: accessor.byteOffset || 0, normalized: accessor.normalized || false }
+          case 'indices':
+            return { 
+              array, 
+              count: accessor.count, 
+              ctype: accessor.componentType, 
+              offset: accessor.byteOffset || 0 
+            }
+          case 'positions': 
+          case 'normals': 
+          case 'textcoords':
+            return { 
+              array, 
+              size: TYPE[accessor.type], 
+              stride: bufferView.byteStride || 0, 
+              offset: accessor.byteOffset || 0, 
+              normalized: accessor.normalized || false 
+            }
         }
       }
 
@@ -178,7 +198,7 @@ void main () {
             indices: parseBufferType('indices', primitive.indices), // p.indices = scalar
             positions: parseBufferType('positions', primitive.attributes.POSITION), // p.attributes.POSITION = vec3
             normals: parseBufferType('normals', primitive.attributes.NORMAL), // p.attributes.NORMAL = vec3
-            // texcoord: null, // p.attributes.TEXCOORD_0 = vec2
+            texcoord: parseBufferType('textcoords', primitive.attributes.TEXCOORD_0), // p.attributes.TEXCOORD_0 = vec2
             // weights: null // p.attributes.WEIGHTS_0 = vec4
           };
 
@@ -196,7 +216,7 @@ void main () {
   var loadGltf = () => {
 
     // return fetch(`${rel}cube/cube.gltf.json`)
-    return fetch(`${rel}door/scene.gltf.json`)
+    return fetch(`${rel}barrel/scene.gltf.json`)
     .then(response => {
       return response.json().then(data => {
         return parseGltf(data)
@@ -229,6 +249,7 @@ void main () {
       attrs: {
         a_position: gl.getAttribLocation(program, 'a_position'),
         a_normal: gl.getAttribLocation(program, 'a_vertexNormal'),
+        a_vertexTextureCoords: gl.getAttribLocation(program, 'a_vertexTextureCoords'),
       },
       uniforms: {
         u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
@@ -243,11 +264,13 @@ void main () {
 
         u_materialAmbient: gl.getUniformLocation(program, 'u_materialAmbient'),
         u_materialDiffuse: gl.getUniformLocation(program, 'u_materialDiffuse'),
-        u_materialSpecular: gl.getUniformLocation(program, 'u_materialSpecular')
+        u_materialSpecular: gl.getUniformLocation(program, 'u_materialSpecular'),
+
+        u_diffuse: gl.getUniformLocation(program, 'u_diffuse'),
       }
     }
 
-    gl.uniform1f(posizione.uniforms.u_shine, 12);
+    gl.uniform1f(posizione.uniforms.u_shine, 64);
     gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
     gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.02, 0.02, 0.02, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
@@ -270,6 +293,11 @@ void main () {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices.array, gl.STATIC_DRAW);
 
+    let textureBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.texcoord.array, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(posizione.attrs.a_vertexTextureCoords);
+    gl.vertexAttribPointer(posizione.attrs.a_vertexTextureCoords, 2, gl.FLOAT, mesh.texcoord.normalized, 0, 0); 
 
     let normalBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
@@ -302,7 +330,7 @@ void main () {
 
       let q = quat2.create();
       quat2.rotateY(q, q, cubeRotation);
-      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -20], [0.05, 0.05, 0.05]);
+      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
       
       mat4.identity(cameraMatrix);
       let q2 = quat2.create();
