@@ -1,6 +1,7 @@
 import { mat4, quat, quat2 } from 'gl-matrix';
 import { createProgramWithShaders } from './utility/common';
 
+import albedo from './assets/woodmetal/container2.png';
 const vShader = `#version 300 es
 precision highp float;
 precision highp int;
@@ -65,11 +66,12 @@ void main () {
     // float specular = pow( max(dot(R, E), 0.), u_shine );
     float specular = pow(max(dot(halfDir, N), 0.), u_shine);
     Is = u_lightSpecular * u_materialSpecular * specular;
+    // Is = u_lightSpecular * u_materialSpecular * specular * texture(u_specular, v_textureCoords);
   }
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
+  color = color * texture(u_diffuse, v_textureCoords);
   // color = vec4(N, 1.);
-  // color = vec4(1.);
 }
 `;
 
@@ -107,7 +109,12 @@ void main () {
     'MAT4': 16
   }
 
-  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/`;
+  const INDICES = 0;
+  const POSITIONS = 1;
+  const NORMALS = 2;
+  const TEXTCOORDS = 3;
+
+  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/barrel/`;
 
   var newRef = () => {
     return (+new Date()).toString(16) + '.' + (Math.random() * 10000000 | 0).toString(16);
@@ -139,7 +146,7 @@ void main () {
     traverseNode(raw.scenes[0].nodes[0]);
 
     // return fetchBuffer(`cube/${raw.buffers[0].uri}`).then(buffer => {
-    return fetchBuffer(`barrel/${raw.buffers[0].uri}`).then(buffer => {
+    return fetchBuffer(`${raw.buffers[0].uri}`).then(buffer => {
       let parseBufferType = (dtype, idx) => {
         let accessor = raw.accessors[idx],
             bufferView = raw.bufferViews[accessor.bufferView],
@@ -170,16 +177,16 @@ void main () {
             array = new arrayType(buffer, bufferOffset, accessor.count * TYPE[accessor.type]);
 
         switch (dtype) {
-          case 'indices':
+          case INDICES:
             return { 
               array, 
               count: accessor.count, 
               ctype: accessor.componentType, 
               offset: accessor.byteOffset || 0 
             }
-          case 'positions': 
-          case 'normals': 
-          case 'textcoords':
+          case POSITIONS: 
+          case NORMALS: 
+          case TEXTCOORDS:
             return { 
               array, 
               size: TYPE[accessor.type], 
@@ -195,18 +202,28 @@ void main () {
         scene.meshes[meshRef].processed = mesh.primitives.map(primitive => {
           let parsedMesh = {
             mode: primitive.mode || 4, 
-            indices: parseBufferType('indices', primitive.indices), // p.indices = scalar
-            positions: parseBufferType('positions', primitive.attributes.POSITION), // p.attributes.POSITION = vec3
-            normals: parseBufferType('normals', primitive.attributes.NORMAL), // p.attributes.NORMAL = vec3
-            texcoord: parseBufferType('textcoords', primitive.attributes.TEXCOORD_0), // p.attributes.TEXCOORD_0 = vec2
-            // weights: null // p.attributes.WEIGHTS_0 = vec4
+            indices: parseBufferType(INDICES, primitive.indices),
+            positions: parseBufferType(POSITIONS, primitive.attributes.POSITION),
+            normals: parseBufferType(NORMALS, primitive.attributes.NORMAL),
+            texcoord: parseBufferType(TEXTCOORDS, primitive.attributes.TEXCOORD_0)
           };
 
-          return parsedMesh;
+          let material = raw.materials[primitive.material],
+              { pbrMetallicRoughness } = material,
+              { baseColorTexture } = pbrMetallicRoughness,
+              texture = raw.textures[baseColorTexture.index];
+
+          let transformedMat = {
+            diffuse: {
+              source: raw.images[texture.source].uri,
+              sampler: raw.samplers[texture.sampler]
+            }
+          }
+
+          return { ...parsedMesh, material: transformedMat };
         })
       })
 
-      
       return scene;
     });
     
@@ -216,7 +233,7 @@ void main () {
   var loadGltf = () => {
 
     // return fetch(`${rel}cube/cube.gltf.json`)
-    return fetch(`${rel}barrel/scene.gltf.json`)
+    return fetch(`${rel}scene.gltf.json`)
     .then(response => {
       return response.json().then(data => {
         return parseGltf(data)
@@ -278,7 +295,7 @@ void main () {
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-    gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
+    gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1, 1, 1, 1]);
 
     console.log(mesh);
 
@@ -305,6 +322,35 @@ void main () {
     gl.enableVertexAttribArray(posizione.attrs.a_normal);
     gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, mesh.normals.normalized, 0, 0)// mesh.normals.stride, mesh.normals.offset);
 
+    const texture = gl.createTexture();
+    const image = new Image();
+    image.src = `${rel}${mesh.material.diffuse.source}`;
+    image.crossOrigin = `Anonymous`;
+    image.onload = () => {
+      let { sampler } = mesh.material.diffuse;
+      // gl.createSampler()
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+      if (sampler.minFilter) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
+      } else {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.NEAREST_MIPMAP_LINEAR);
+      }
+
+      if (sampler.magFilter) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
+      } else {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      }
+      
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
+
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+
     var fov = 55 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
         zNear = 0.1,
@@ -329,7 +375,8 @@ void main () {
 
 
       let q = quat2.create();
-      quat2.rotateY(q, q, cubeRotation);
+      quat2.rotateX(q, q, -1.2);
+      quat2.rotateZ(q, q, cubeRotation);
       mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
       
       mat4.identity(cameraMatrix);
@@ -344,6 +391,10 @@ void main () {
 
       mat4.invert(normalMatrix, modelViewMatrix);
       mat4.transpose(normalMatrix, normalMatrix);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.uniform1i(posizione.uniforms.u_diffuse, 0);
 
       gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
       gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
