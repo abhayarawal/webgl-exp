@@ -132,17 +132,18 @@ void main () {
 
     // return fetchBuffer(`cube/${raw.buffers[0].uri}`).then(buffer => {
     return fetchBuffer(`barrel/${raw.buffers[0].uri}`).then(buffer => {
-      let parseBufferType = (idx) => {
+      let parseBufferType = (dtype, idx) => {
         let accessor = raw.accessors[idx],
             bufferView = raw.bufferViews[accessor.bufferView],
             bufferOffset = (accessor.byteOffset || 0) + (bufferView.byteOffset || 0),
             byteLen = 0,
+            itemSize = TYPE[accessor.type],
             arrayType = null;
 
         switch (accessor.componentType) {
           case TYPE_UNSIGNED_SHORT: arrayType = Uint16Array; break;
           case TYPE_UNSIGNED_INT: arrayType = Uint32Array; break;
-          case TYPE_UNSIGNED_BYTE: arrayType = Uint32Array; break;
+          case TYPE_UNSIGNED_BYTE: arrayType = Uint8Array; break;
           case TYPE_FLOAT: arrayType = Float32Array; break;
           case TYPE_SHORT: arrayType = Int16Array; break;
           default:
@@ -150,26 +151,33 @@ void main () {
             break;
         }
 
-        if (bufferView.byteStride != undefined) {
+        if (bufferView.byteStride && bufferView.byteStride !== itemSize) {
           byteLen = bufferView.byteStride * accessor.count;
         } else {
           byteLen = accessor.count * TYPE[accessor.type] * arrayType.BYTES_PER_ELEMENT;
         }
 
         let finalLen = byteLen / arrayType.BYTES_PER_ELEMENT,
-            array = new arrayType(finalLen);
+            // array = new arrayType(buffer, bufferOffset, finalLen);
+            array = new arrayType(buffer, bufferOffset, accessor.count * TYPE[accessor.type]);
 
-        return new arrayType(buffer, bufferOffset, finalLen);
+        switch (dtype) {
+          case 'indices': // 4
+            return { array, count: accessor.count, ctype: accessor.componentType, offset: accessor.byteOffset || 0 }
+          case 'positions': // 0
+          case 'normals': // 1
+            return { array, stride: bufferView.byteStride || 0, offset: accessor.byteOffset || 0, normalized: accessor.normalized || false }
+        }
       }
 
       Object.keys(scene.meshes).forEach(meshRef => {
         let { mesh } = scene.meshes[meshRef];
         scene.meshes[meshRef].processed = mesh.primitives.map(primitive => {
           let parsedMesh = {
-            mode: MODE_TRIANGLES, 
-            elements: parseBufferType(primitive.indices), // p.indices = scalar
-            positions: parseBufferType(primitive.attributes.POSITION), // p.attributes.POSITION = vec3
-            normals: parseBufferType(primitive.attributes.NORMAL), // p.attributes.NORMAL = vec3
+            mode: primitive.mode || 4, 
+            indices: parseBufferType('indices', primitive.indices), // p.indices = scalar
+            positions: parseBufferType('positions', primitive.attributes.POSITION), // p.attributes.POSITION = vec3
+            normals: parseBufferType('normals', primitive.attributes.NORMAL), // p.attributes.NORMAL = vec3
             // texcoord: null, // p.attributes.TEXCOORD_0 = vec2
             // weights: null // p.attributes.WEIGHTS_0 = vec4
           };
@@ -177,6 +185,7 @@ void main () {
           return parsedMesh;
         })
       })
+
       
       return scene;
     });
@@ -192,15 +201,15 @@ void main () {
       return response.json().then(data => {
         return parseGltf(data)
       })
-    })
-    .catch(err => {
-      console.error(`error loading gtlf file`)
     });
+    // .catch(err => {
+    //   console.error(`error loading gtlf file`)
+    // });
 
   }
   
   loadGltf().then(scene => {
-    console.log(scene);
+    // console.log(scene);
     
     const canvas = document.getElementById('webgl-canvas'),
         gl = canvas.getContext('webgl2');
@@ -248,24 +257,25 @@ void main () {
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.7, 0.7, 0.7, 1]);
 
+    console.log(mesh);
 
 
     let vertexPosBuffer = gl.createBuffer();  
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, mesh.positions, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.positions.array, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(posizione.attrs.a_position);
-    gl.vertexAttribPointer(posizione.attrs.a_position, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(posizione.attrs.a_position, 3, gl.FLOAT, false, mesh.positions.stride, mesh.positions.offset);
 
     let indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.elements, gl.STATIC_DRAW);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices.array, gl.STATIC_DRAW);
 
 
     let normalBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, mesh.normals, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh.normals.array, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(posizione.attrs.a_normal);
-    gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, false, mesh.normals.stride, mesh.normals.offset);
 
     var fov = 55 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
@@ -284,7 +294,7 @@ void main () {
       gl.clearColor(0.9, 0.9, 0.9, 1);
       gl.clearDepth(100);
       gl.enable(gl.DEPTH_TEST);
-      gl.enable(gl.CULL_FACE);
+      // gl.enable(gl.CULL_FACE);
       gl.depthFunc(gl.LEQUAL);
 
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -311,7 +321,7 @@ void main () {
       gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
       gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
-      gl.drawElements(gl.TRIANGLES, mesh.elements.length, gl.UNSIGNED_SHORT, 0);
+      gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, mesh.indices.offset);
 
       cubeRotation += deltaTime;
     }
