@@ -113,7 +113,8 @@ void main () {
   const NORMALS = 2;
   const TEXTCOORDS = 3;
 
-  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/door/`;
+  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/corset/`;
+  let gltfSource = `corset.gltf.json`;
 
   var newRef = () => {
     return (+new Date()).toString(16) + '.' + (Math.random() * 10000000 | 0).toString(16);
@@ -226,7 +227,7 @@ void main () {
           transformedMat = {
             diffuse: {
               source: raw.images[diffuse.source].uri,
-              sampler: raw.samplers[diffuse.sampler]
+              sampler: diffuse.sampler ? raw.samplers[diffuse.sampler] : false
             }
           }
 
@@ -253,7 +254,7 @@ void main () {
   var loadGltf = () => {
 
     // return fetch(`${rel}cube/cube.gltf.json`)
-    return fetch(`${rel}scene.gltf.json`)
+    return fetch(`${rel}${gltfSource}`)
     .then(response => {
       return response.json().then(data => {
         return parseGltf(data)
@@ -310,8 +311,8 @@ void main () {
 
     gl.uniform1f(posizione.uniforms.u_shine, 64);
     gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
-    gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.02, 0.02, 0.02, 1]);
-    gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1, 1, 1, 1]);
+    gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.1, 0.1, 0.1, 1]);
+    gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.1, 1.1, 1.1, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
@@ -353,10 +354,11 @@ void main () {
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
+        // if 
         if (sampler.minFilter) {
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
         } else {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.NEAREST_MIPMAP_LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
         }
 
         if (sampler.magFilter) {
@@ -407,10 +409,11 @@ void main () {
 
       let q = quat2.create();
       // quat2.rotateX(q, q, -1.3);
-      quat2.rotateX(q, q, -1.5);
-      // quat2.rotateY(q, q, .2);
-      quat2.rotateZ(q, q, cubeRotation);
-      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
+      // quat2.rotateX(q, q, -1.5);
+      // quat2.rotateZ(q, q, cubeRotation);
+      quat2.rotateY(q, q, cubeRotation);
+      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
+      mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
       // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
       
       mat4.identity(cameraMatrix);
