@@ -114,7 +114,7 @@ void main () {
   const NORMALS = 2;
   const TEXTCOORDS = 3;
 
-  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/door/`;
+  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/outdoor/`;
   let gltfSource = `scene.gltf.json`;
 
   var newRef = () => {
@@ -344,11 +344,16 @@ void main () {
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-    let specVector = mesh.material.specular.vector;
-    gl.uniform4fv(
-      posizione.uniforms.u_materialSpecular, 
-      specVector.length === 3 ? [...specVector, 1.] : specVector
-    );
+
+    if (mesh.material.specular) {
+      let specVector = mesh.material.specular.vector;
+      gl.uniform4fv(
+        posizione.uniforms.u_materialSpecular, 
+        specVector.length === 3 ? [...specVector, 1.] : specVector
+      );
+    } else {
+      gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.5, 0.5, 0.5, 1.]);
+    }
 
     let vertexPosBuffer = gl.createBuffer();  
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
@@ -459,14 +464,10 @@ void main () {
         }
       
         let q = quat2.create();
-        // quat2.rotateX(q, q, -1.3);
         quat2.rotateX(q, q, -1.5);
-        quat2.rotateZ(q, q, cubeRotation);
-        // quat2.rotateY(q, q, cubeRotation);
-        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 1, -10], [1,1,1]);// [0.05, 0.05, 0.05]);
-        mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
-        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
-        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
+        quat2.rotateZ(q, q, cubeRotation*0.2);
+        mat4.fromRotationTranslationScale(modelMatrix, q, [1, -10, -15], [.5, .5, .5]);
+        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
         
         
         mat4.invert(modelViewMatrix, cameraMatrix);
