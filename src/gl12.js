@@ -113,8 +113,8 @@ void main () {
   const NORMALS = 2;
   const TEXTCOORDS = 3;
 
-  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/corset/`;
-  let gltfSource = `corset.gltf.json`;
+  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/door/`;
+  let gltfSource = `scene.gltf.json`;
 
   var newRef = () => {
     return (+new Date()).toString(16) + '.' + (Math.random() * 10000000 | 0).toString(16);
@@ -310,7 +310,7 @@ void main () {
     }
 
     gl.uniform1f(posizione.uniforms.u_shine, 64);
-    gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.25, -.25, -.25]);
+    gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.15, -.25, -.25]);
     gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.1, 0.1, 0.1, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.1, 1.1, 1.1, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
@@ -347,28 +347,29 @@ void main () {
     var bindImageToTexture = (tex, prop) => {
       const image = new Image();
       image.src = `${rel}${prop.source}`;
-      image.crossOrigin = `Anonymous`;
+      image.crossOrigin = `anonymous`;
       image.onload = () => {
         let { sampler } = prop;
         // gl.createSampler()
         gl.bindTexture(gl.TEXTURE_2D, tex);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-        // if 
-        if (sampler.minFilter) {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
-        } else {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
-        }
+        if (sampler) {
+          if (sampler.minFilter) {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
+          } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+          }
 
-        if (sampler.magFilter) {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
-        } else {
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          if (sampler.magFilter) {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
+          } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          }
+          
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
         }
-        
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
 
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
@@ -409,11 +410,11 @@ void main () {
 
       let q = quat2.create();
       // quat2.rotateX(q, q, -1.3);
-      // quat2.rotateX(q, q, -1.5);
-      // quat2.rotateZ(q, q, cubeRotation);
-      quat2.rotateY(q, q, cubeRotation);
-      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
-      mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
+      quat2.rotateX(q, q, -1.5);
+      quat2.rotateZ(q, q, cubeRotation);
+      // quat2.rotateY(q, q, cubeRotation);
+      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
+      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
       // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
       
       mat4.identity(cameraMatrix);
