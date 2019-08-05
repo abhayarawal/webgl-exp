@@ -309,7 +309,7 @@ void main () {
         u_materialSpecular: gl.getUniformLocation(program, 'u_materialSpecular'),
 
         u_diffuse: gl.getUniformLocation(program, 'u_diffuse'),
-        u_diffuse: gl.getUniformLocation(program, 'u_specular'),
+        u_specular: gl.getUniformLocation(program, 'u_specular'),
       }
     }
 
