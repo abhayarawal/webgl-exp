@@ -268,24 +268,47 @@ void main () {
     // });
 
   }
-  
-  loadGltf().then(scene => {
-    // console.log(scene);
-    
-    const canvas = document.getElementById('webgl-canvas'),
-        gl = canvas.getContext('webgl2');
-  
-    // init program
+
+
+  var loadTextureBuffer = (gl, tex, prop) => {
+    let image = new Image();
+    image.src = `${rel}${prop.source}`;
+    image.crossOrigin = `anonymous`;
+    image.onload = () => {
+      let { sampler } = prop;
+      // gl.createSampler()
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+
+      if (sampler) {
+        if (sampler.minFilter) {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+        }
+
+        if (sampler.magFilter) {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
+        } else {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        }
+        
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
+      }
+      
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+  }
+
+
+  var setupMesh = (gl, mesh) => {
     let program = createProgramWithShaders(gl, vShader, fShader);
     gl.useProgram(program);
-
-    // console.log(scene.meshes[0].processed[0])
-    let mesh = scene.meshes[0].processed[0];
-
-
-    // init vertex array
+    mesh = mesh.processed[0];
     let vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
+        gl.bindVertexArray(vao);
 
     let posizione = {
       attrs: {
@@ -311,7 +334,7 @@ void main () {
         u_diffuse: gl.getUniformLocation(program, 'u_diffuse'),
         u_specular: gl.getUniformLocation(program, 'u_specular'),
       }
-    }
+    } 
 
     gl.uniform1f(posizione.uniforms.u_shine, 64);
     gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.15, -.25, -.25]);
@@ -322,11 +345,10 @@ void main () {
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
     let specVector = mesh.material.specular.vector;
-    gl.uniform4fv(posizione.uniforms.u_materialSpecular, specVector.length === 3 ? [...specVector, 1.] : specVector);
-    // gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1.2, 1.2, 1.2, 1]);
-
-    console.log(mesh);
-
+    gl.uniform4fv(
+      posizione.uniforms.u_materialSpecular, 
+      specVector.length === 3 ? [...specVector, 1.] : specVector
+    );
 
     let vertexPosBuffer = gl.createBuffer();  
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexPosBuffer);
@@ -349,47 +371,44 @@ void main () {
     gl.bufferData(gl.ARRAY_BUFFER, mesh.normals.array, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(posizione.attrs.a_normal);
     gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, mesh.normals.normalized, 0, 0)// mesh.normals.stride, mesh.normals.offset);
-
-    var bindImageToTexture = (tex, prop) => {
-      let image = new Image();
-      image.src = `${rel}${prop.source}`;
-      image.crossOrigin = `anonymous`;
-      image.onload = () => {
-        let { sampler } = prop;
-        // gl.createSampler()
-        gl.bindTexture(gl.TEXTURE_2D, tex);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-        if (sampler) {
-          if (sampler.minFilter) {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampler.minFilter);
-          } else {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
-          }
-
-          if (sampler.magFilter) {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampler.magFilter);
-          } else {
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-          }
-          
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
-          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
-        }
-        
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-      }
-    }
     
     const texture = gl.createTexture();
-    bindImageToTexture(texture, mesh.material.diffuse);
+    loadTextureBuffer(gl, texture, mesh.material.diffuse);
     
     var textureSpec;
     if (mesh.material.specular) {
       textureSpec = gl.createTexture();
-      bindImageToTexture(textureSpec, mesh.material.specular);
+      loadTextureBuffer(gl, textureSpec, mesh.material.specular);
     }
+
+    let buffers = {
+      vertexPosBuffer,
+      indexBuffer,
+      textureBuffer,
+      normalBuffer,
+      texture,
+      textureSpec
+    }
+
+    return { ...mesh, program, vao, posizione, buffers };
+  }
+  
+  loadGltf().then(scene => {
+    // console.log(scene);
+    
+    const canvas = document.getElementById('webgl-canvas'),
+          gl = canvas.getContext('webgl2');
+
+    
+  
+    // init program
+    let program = createProgramWithShaders(gl, vShader, fShader);
+    gl.useProgram(program);
+    
+    Object.keys(scene.meshes).map(k => {
+      let mesh = scene.meshes[k];
+      scene.meshes[k] = setupMesh(gl, mesh);
+    })
 
     var fov = 55 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
@@ -404,6 +423,7 @@ void main () {
           normalMatrix = mat4.create();
     mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
 
+    
     let draw = (deltaTime) => {
       gl.clearColor(0.9, 0.9, 0.9, 1);
       gl.clearDepth(100);
@@ -415,44 +435,52 @@ void main () {
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
-      let q = quat2.create();
-      // quat2.rotateX(q, q, -1.3);
-      quat2.rotateX(q, q, -1.5);
-      quat2.rotateZ(q, q, cubeRotation);
-      // quat2.rotateY(q, q, cubeRotation);
-      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 1, -10], [1,1,1]);// [0.05, 0.05, 0.05]);
-      mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
-      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
-      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
+      Object.keys(scene.meshes).map(k => {
+        mat4.identity(cameraMatrix);
+        let q2 = quat2.create();
+        quat2.rotateX(q2, q2, 0);
+        quat2.rotateY(q2, q2, 0);
+        quat2.rotateZ(q2, q2, 0);
+        mat4.fromRotationTranslation(cameraMatrix, q2, [0, 0, 0]);
+
+        let mesh = scene.meshes[k];
+        gl.useProgram(mesh.program);
+
+        gl.bindVertexArray(mesh.vao);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.texture);
+        gl.uniform1i(mesh.posizione.uniforms.u_diffuse, 0);
+
+        if (mesh.material.specular) {
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.textureSpec);
+          gl.uniform1i(mesh.posizione.uniforms.u_specular, 1);
+        }
       
-      mat4.identity(cameraMatrix);
-      let q2 = quat2.create();
-      quat2.rotateX(q2, q2, 0);
-      quat2.rotateY(q2, q2, 0);
-      quat2.rotateZ(q2, q2, 0);
-      mat4.fromRotationTranslation(cameraMatrix, q2, [0, 0, 0]);
+        let q = quat2.create();
+        // quat2.rotateX(q, q, -1.3);
+        quat2.rotateX(q, q, -1.5);
+        quat2.rotateZ(q, q, cubeRotation);
+        // quat2.rotateY(q, q, cubeRotation);
+        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 1, -10], [1,1,1]);// [0.05, 0.05, 0.05]);
+        mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
+        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
+        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
+        
+        
+        mat4.invert(modelViewMatrix, cameraMatrix);
+        mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
 
-      mat4.invert(modelViewMatrix, cameraMatrix);
-      mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
+        mat4.invert(normalMatrix, modelViewMatrix);
+        mat4.transpose(normalMatrix, normalMatrix);
 
-      mat4.invert(normalMatrix, modelViewMatrix);
-      mat4.transpose(normalMatrix, normalMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.uniform1i(posizione.uniforms.u_diffuse, 0);
-
-      if (mesh.material.specular) {
-        gl.activeTexture(gl.TEXTURE0 + 1);
-        gl.bindTexture(gl.TEXTURE_2D, textureSpec);
-        gl.uniform1i(posizione.uniforms.u_specular, 1);
-      }
-
-      gl.uniformMatrix4fv(posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
-      gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
-      gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
-
-      gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
+        gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
+      })
 
       cubeRotation += deltaTime;
     }
