@@ -353,7 +353,7 @@ void main () {
         specVector.length === 3 ? [...specVector, 1.] : specVector
       );
     } else {
-      gl.uniform4fv(posizione.uniforms.u_materialSpecular, [0.5, 0.5, 0.5, 1.]);
+      gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1., 1., 1., 1.]);
     }
 
     let vertexPosBuffer = gl.createBuffer();  
