@@ -114,7 +114,7 @@ void main () {
   const NORMALS = 2;
   const TEXTCOORDS = 3;
 
-  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/outdoor/`;
+  let rel = `https://akute.nyc3.digitaloceanspaces.com/engine/roamer/`;
   let gltfSource = `scene.gltf.json`;
 
   var newRef = () => {
@@ -148,6 +148,7 @@ void main () {
 
     // return fetchBuffer(`cube/${raw.buffers[0].uri}`).then(buffer => {
     return fetchBuffer(`${raw.buffers[0].uri}`).then(buffer => {
+      
       let parseBufferType = (dtype, idx) => {
         let accessor = raw.accessors[idx],
             bufferView = raw.bufferViews[accessor.bufferView],
@@ -465,8 +466,16 @@ void main () {
       
         let q = quat2.create();
         quat2.rotateX(q, q, -1.5);
-        quat2.rotateZ(q, q, cubeRotation*0.2);
-        mat4.fromRotationTranslationScale(modelMatrix, q, [1, -10, -15], [.5, .5, .5]);
+        if (k > 0) {
+          quat2.rotateX(q, q, 1.5);
+          quat2.rotateY(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
+        } else {
+          quat2.rotateZ(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
+        }
+
+        
         // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
         
         
