@@ -70,6 +70,7 @@ void main () {
 
   color = vec4(vec3(Ia + Id + Is), 1.0);
   color = color * texture(u_diffuse, v_textureCoords);
+  // color =  texture(u_diffuse, v_textureCoords);
   // color = vec4(N, 1.);
 }
 `;
@@ -221,13 +222,14 @@ void main () {
 
             if (material.extensions.KHR_materials_pbrSpecularGlossiness.specularGlossinessTexture) {
               specular = raw.textures[material.extensions.KHR_materials_pbrSpecularGlossiness.specularGlossinessTexture.index]
+              specular = {...specular, vector: material.extensions.KHR_materials_pbrSpecularGlossiness.specularFactor}
             }
           }
 
           transformedMat = {
             diffuse: {
               source: raw.images[diffuse.source].uri,
-              sampler: diffuse.sampler ? raw.samplers[diffuse.sampler] : false
+              sampler: diffuse.sampler !== undefined ? raw.samplers[diffuse.sampler] : false
             }
           }
 
@@ -236,7 +238,8 @@ void main () {
               ...transformedMat,
               specular: {
                 source: raw.images[specular.source].uri,
-                sampler: raw.samplers[specular.sampler] 
+                sampler: raw.samplers[specular.sampler],
+                vector: specular.vector
               }
             }
           }
@@ -276,6 +279,7 @@ void main () {
     let program = createProgramWithShaders(gl, vShader, fShader);
     gl.useProgram(program);
 
+    // console.log(scene.meshes[0].processed[0])
     let mesh = scene.meshes[0].processed[0];
 
 
@@ -317,7 +321,9 @@ void main () {
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
-    gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1.2, 1.2, 1.2, 1]);
+    let specVector = mesh.material.specular.vector;
+    gl.uniform4fv(posizione.uniforms.u_materialSpecular, specVector.length === 3 ? [...specVector, 1.] : specVector);
+    // gl.uniform4fv(posizione.uniforms.u_materialSpecular, [1.2, 1.2, 1.2, 1]);
 
     console.log(mesh);
 
@@ -345,7 +351,7 @@ void main () {
     gl.vertexAttribPointer(posizione.attrs.a_normal, 3, gl.FLOAT, mesh.normals.normalized, 0, 0)// mesh.normals.stride, mesh.normals.offset);
 
     var bindImageToTexture = (tex, prop) => {
-      const image = new Image();
+      let image = new Image();
       image.src = `${rel}${prop.source}`;
       image.crossOrigin = `anonymous`;
       image.onload = () => {
@@ -370,7 +376,7 @@ void main () {
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, sampler.wrapS);
           gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, sampler.wrapT);
         }
-
+        
         gl.generateMipmap(gl.TEXTURE_2D);
         gl.bindTexture(gl.TEXTURE_2D, null);
       }
@@ -402,9 +408,10 @@ void main () {
       gl.clearColor(0.9, 0.9, 0.9, 1);
       gl.clearDepth(100);
       gl.enable(gl.DEPTH_TEST);
-      // gl.enable(gl.CULL_FACE);
+      gl.enable(gl.CULL_FACE);
       gl.depthFunc(gl.LEQUAL);
-
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
@@ -413,6 +420,7 @@ void main () {
       quat2.rotateX(q, q, -1.5);
       quat2.rotateZ(q, q, cubeRotation);
       // quat2.rotateY(q, q, cubeRotation);
+      // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 1, -10], [1,1,1]);// [0.05, 0.05, 0.05]);
       mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);// [0.05, 0.05, 0.05]);
       // mat4.fromRotationTranslationScale(modelMatrix, q, [0, -0.35, -1], [14, 14, 14]);// [0.05, 0.05, 0.05]);
       // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [1, 1, 1]);// [0.05, 0.05, 0.05]);
@@ -435,7 +443,7 @@ void main () {
       gl.uniform1i(posizione.uniforms.u_diffuse, 0);
 
       if (mesh.material.specular) {
-        gl.activeTexture(gl.TEXTURE0);
+        gl.activeTexture(gl.TEXTURE0 + 1);
         gl.bindTexture(gl.TEXTURE_2D, textureSpec);
         gl.uniform1i(posizione.uniforms.u_specular, 1);
       }
@@ -444,7 +452,7 @@ void main () {
       gl.uniformMatrix4fv(posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
       gl.uniformMatrix4fv(posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
-      gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, mesh.indices.offset);
+      gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
 
       cubeRotation += deltaTime;
     }
