@@ -269,10 +269,10 @@ lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
         u_normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
 
         u_shine: gl.getUniformLocation(program, 'u_shine'),
-        u_lightDirection: gl.getUniformLocation(program, 'u_lightDir.lightDirection'),
-        u_lightAmbient: gl.getUniformLocation(program, 'u_lightDir.lightAmbient'),
-        u_lightDiffuse: gl.getUniformLocation(program, 'u_lightDir.lightDiffuse'),
-        u_lightSpecular: gl.getUniformLocation(program, 'u_lightDir.lightSpecular'),
+        u_lightDirection: gl.getUniformLocation(program, 'u_dirLight.lightDirection'),
+        u_lightAmbient: gl.getUniformLocation(program, 'u_dirLight.lightAmbient'),
+        u_lightDiffuse: gl.getUniformLocation(program, 'u_dirLight.lightDiffuse'),
+        u_lightSpecular: gl.getUniformLocation(program, 'u_dirLighti.lightSpecular'),
 
         u_materialAmbient: gl.getUniformLocation(program, 'u_materialAmbient'),
         u_materialDiffuse: gl.getUniformLocation(program, 'u_materialDiffuse'),
@@ -282,14 +282,14 @@ lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
         u_specular: gl.getUniformLocation(program, 'u_specular'),
 
         lights: {
-          u_pl_position: gl.getUniformLocation(program, 'u_pointLight.position'),
-          u_pl_ambient: gl.getUniformLocation(program, 'u_pointLight.ambient'),
-          u_pl_diffuse: gl.getUniformLocation(program, 'u_pointLight.diffuse'),
-          u_pl_diffuseMultiplier: gl.getUniformLocation(program, 'u_pointLight.diffuseMultiplier'),
-          u_pl_specular: gl.getUniformLocation(program, 'u_pointLight.specular'),
-          u_pl_constant: gl.getUniformLocation(program, 'u_pointLight.constant'),
-          u_pl_linear: gl.getUniformLocation(program, 'u_pointLight.linear'),
-          u_pl_quadratic: gl.getUniformLocation(program, 'u_pointLight.quadratic'),
+          u_pl_position: gl.getUniformLocation(program, 'u_pointLights[0].position'),
+          u_pl_ambient: gl.getUniformLocation(program, 'u_pointLights[0].ambient'),
+          u_pl_diffuse: gl.getUniformLocation(program, 'u_pointLights[0].diffuse'),
+          u_pl_diffuseMultiplier: gl.getUniformLocation(program, 'u_pointLights[0].diffuseMultiplier'),
+          u_pl_specular: gl.getUniformLocation(program, 'u_pointLights[0].specular'),
+          u_pl_constant: gl.getUniformLocation(program, 'u_pointLights[0].constant'),
+          u_pl_linear: gl.getUniformLocation(program, 'u_pointLights[0].linear'),
+          u_pl_quadratic: gl.getUniformLocation(program, 'u_pointLights[0].quadratic'),
         }
       }
     } 
@@ -299,13 +299,13 @@ lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
     gl.uniform1f(posizione.uniforms.u_shine, 64);
     gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.15, -.25, -.25]);
     gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.1, 0.1, 0.1, 1]);
-    gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.1, 1.1, 1.1, 1]);
+    gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.0, 1.0, 1.0, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
 
     gl.uniform3fv(posizione.uniforms.lights.u_pl_position, [3.0, 3.0, 3.0]);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_ambient, [0.2, 0.2, 0.2]);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_diffuse, [1., 1., 1.]);
-    gl.uniform1f(posizione.uniforms.lights.u_pl_diffuseMultiplier, 2.4);
+    gl.uniform1f(posizione.uniforms.lights.u_pl_diffuseMultiplier, 1.2);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_specular, [1.0, 1.0, 1.0]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_constant, [1.0]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_linear, [0.045]);
