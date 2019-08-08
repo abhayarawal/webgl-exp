@@ -42,8 +42,8 @@ void main () {
   
   vec3 N = normalize(v_normal);
   vec3 lightDir = normalize(u_pointLight.position - v_pos);
-  float diff = max(dot(N, lightDir), 0.0);
-  vec3 Id = u_pointLight.diffuse * diff * texture(u_diffuse, v_textureCoords).rgb;
+  float lambertTerm = max(dot(N, lightDir), 0.0);
+  vec3 Id = u_pointLight.diffuse * lambertTerm * texture(u_diffuse, v_textureCoords).rgb;
 
   // vec3 viewDir = normalize()
 
