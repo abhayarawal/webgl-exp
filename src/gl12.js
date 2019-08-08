@@ -304,7 +304,7 @@ lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
 
     gl.uniform3fv(posizione.uniforms.lights.u_pl_position, [3.0, 3.0, 3.0]);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_ambient, [0.2, 0.2, 0.2]);
-    gl.uniform3fv(posizione.uniforms.lights.u_pl_diffuse, [1., 1., 1.]);
+    gl.uniform3fv(posizione.uniforms.lights.u_pl_diffuse, [255/256,108/256,183/256]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_diffuseMultiplier, 1.2);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_specular, [1.0, 1.0, 1.0]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_constant, [1.0]);
