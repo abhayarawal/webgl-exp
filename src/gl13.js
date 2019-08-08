@@ -1,25 +1,79 @@
 import { mat4, quat, quat2 } from 'gl-matrix';
 import { createProgramWithShaders } from './utility/common';
-import vShader from './vertex.vert';
-import fShader from './frag.frag';
-import * as dat from 'dat.gui'
 
-let props = {
-  light: {
-    translation: {
-      x: 2,
-      y: 2,
-      z: 2
-    }
-  }
+import albedo from './assets/woodmetal/container2.png';
+const vShader = `#version 300 es
+precision highp float;
+precision highp int;
+
+in vec4 a_position;
+in vec3 a_vertexNormal;
+in vec2 a_vertexTextureCoords;
+
+uniform mat4 u_normalMatrix;
+uniform mat4 u_projectionMatrix;
+uniform mat4 u_modelViewMatrix;
+
+out vec2 v_textureCoords;
+out vec3 v_normal;
+out vec3 v_eyeVector;
+
+void main () {
+  // transformed vertex position (euclidean to projective space)
+  vec4 vertex = u_modelViewMatrix * a_position; 
+
+  v_textureCoords = a_vertexTextureCoords;
+
+  v_normal = vec3(u_normalMatrix * vec4(a_vertexNormal, 0.0));
+  v_eyeVector = -vec3(vertex.xyz);
+  gl_Position = u_projectionMatrix * u_modelViewMatrix * a_position;
 }
+`;
 
-const gui = new dat.GUI();
-var lightBox = gui.addFolder('Point Light Translation');
-lightBox.add(props.light.translation, 'x', -30, 30).step(0.1);
-lightBox.add(props.light.translation, 'y', -30, 30).step(0.1);
-lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
+const fShader = `#version 300 es
+precision highp float;
 
+uniform float u_shine;
+uniform vec3 u_lightDirection;
+uniform vec4 u_lightAmbient;
+uniform vec4 u_lightDiffuse;
+uniform vec4 u_lightSpecular;
+uniform vec4 u_materialAmbient;
+uniform vec4 u_materialDiffuse;
+uniform vec4 u_materialSpecular;
+
+uniform sampler2D u_diffuse;
+uniform sampler2D u_specular;
+
+in vec3 v_normal;
+in vec3 v_eyeVector;
+in vec2 v_textureCoords;
+
+out vec4 color;
+
+void main () {
+  vec3 L = normalize(u_lightDirection);
+  vec3 N = normalize(v_normal);
+  float lambertTerm = dot(N, -L);
+  vec4 Ia = u_lightAmbient * u_materialAmbient;
+  vec4 Id = vec4(0.0, 0.0, 0.0, 1.0);
+  vec4 Is = vec4(0.0, 0.0, 0.0, 1.0);
+  
+  if (lambertTerm > 0.0) {
+    Id = u_lightDiffuse * u_materialDiffuse * lambertTerm;
+    vec3 E = normalize(v_eyeVector);
+    vec3 halfDir = normalize(-L + E);
+    float specular = pow(max(dot(halfDir, N), 0.), u_shine);
+    // Is = u_lightSpecular * u_materialSpecular * specular;
+    Is = u_lightSpecular * u_materialSpecular * specular * texture(u_specular, v_textureCoords);
+  }
+
+  color = vec4(vec3(Ia + Id + Is), 1.0);
+  color = color * texture(u_diffuse, v_textureCoords);
+  // color =  texture(u_diffuse, v_textureCoords);
+  // color = vec4(N, 1.);
+}
+`;
 
 (function () {
   const MODE_POINTS 			= 0;	//Mode Constants for GLTF and WebGL are identical
@@ -280,35 +334,14 @@ lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
 
         u_diffuse: gl.getUniformLocation(program, 'u_diffuse'),
         u_specular: gl.getUniformLocation(program, 'u_specular'),
-
-        lights: {
-          u_pl_position: gl.getUniformLocation(program, 'u_pointLight.position'),
-          u_pl_ambient: gl.getUniformLocation(program, 'u_pointLight.ambient'),
-          u_pl_diffuse: gl.getUniformLocation(program, 'u_pointLight.diffuse'),
-          u_pl_specular: gl.getUniformLocation(program, 'u_pointLight.specular'),
-          u_pl_constant: gl.getUniformLocation(program, 'u_pointLight.constant'),
-          u_pl_linear: gl.getUniformLocation(program, 'u_pointLight.linear'),
-          u_pl_quadratic: gl.getUniformLocation(program, 'u_pointLight.quadratic'),
-        }
       }
     } 
-
-    console.log(posizione);
 
     gl.uniform1f(posizione.uniforms.u_shine, 64);
     gl.uniform3fv(posizione.uniforms.u_lightDirection, [-.15, -.25, -.25]);
     gl.uniform4fv(posizione.uniforms.u_lightAmbient, [0.1, 0.1, 0.1, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.1, 1.1, 1.1, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
-
-    gl.uniform3fv(posizione.uniforms.lights.u_pl_position, [3.0, 3.0, 3.0]);
-    gl.uniform3fv(posizione.uniforms.lights.u_pl_ambient, [0.2, 0.2, 0.2]);
-    gl.uniform3fv(posizione.uniforms.lights.u_pl_diffuse, [2.7, 2.7, 2.7]);
-    gl.uniform3fv(posizione.uniforms.lights.u_pl_specular, [1.0, 1.0, 1.0]);
-    gl.uniform1f(posizione.uniforms.lights.u_pl_constant, [1.0]);
-    gl.uniform1f(posizione.uniforms.lights.u_pl_linear, [0.09]);
-    gl.uniform1f(posizione.uniforms.lights.u_pl_quadratic, [0.032]);
-
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
@@ -435,17 +468,17 @@ lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
         quat2.rotateX(q, q, -1.5);
         if (k > 0) {
           quat2.rotateX(q, q, 1.5);
-          // quat2.rotateY(q, q, cubeRotation*0.2);
+          quat2.rotateY(q, q, cubeRotation*0.2);
           mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
         } else {
-          // quat2.rotateZ(q, q, cubeRotation*0.2);
+          quat2.rotateZ(q, q, cubeRotation*0.2);
           mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
         }
 
         
         // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
         
-        gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [props.light.translation.x, props.light.translation.y, props.light.translation.z]);
+        
         mat4.invert(modelViewMatrix, cameraMatrix);
         mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
 
