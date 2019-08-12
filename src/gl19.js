@@ -9,19 +9,19 @@ import * as dat from 'dat.gui'
 let props = {
   light: {
     translation: {
-      x: 2,
-      y: 2,
+      x: 0.9,
+      y: 3,
+      z: 2
+    }
+  },
+  light2: {
+    translation: {
+      x: -4,
+      y: 3,
       z: 2
     }
   }
 }
-
-const gui = new dat.GUI();
-var lightBox = gui.addFolder('Point Light Translation');
-lightBox.add(props.light.translation, 'x', -30, 30).step(0.1);
-lightBox.add(props.light.translation, 'y', -30, 30).step(0.1);
-lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
-
 
 const quadV = `#version 300 es
 precision highp float;
@@ -40,7 +40,7 @@ void main()
 
 const quadF = `#version 300 es
 precision highp float;
-out vec4 color;
+out vec4 FragColor;
 
 in vec2 TexCoords;
 
@@ -58,11 +58,23 @@ float LinearizeDepth(float depth)
 void main()
 {             
     float depthValue = texture(depthMap, TexCoords).r;
-    // color = vec4(vec3(LinearizeDepth(depthValue) / far_plane), 1.0); // perspective
-    color = vec4(vec3(depthValue), 1.0); // orthographic
+    // FragColor = vec4(vec3(LinearizeDepth(depthValue) / far_plane), 1.0); // perspective
+    FragColor = vec4(vec3(depthValue), 1.0); // orthographic
+    // FragColor = vec4(1., .5, 1., 1.0);
 }
 `;
 
+
+const gui = new dat.GUI();
+var lightBox = gui.addFolder('Point Light Translation');
+lightBox.add(props.light.translation, 'x', -30, 30).step(0.1);
+lightBox.add(props.light.translation, 'y', -30, 30).step(0.1);
+lightBox.add(props.light.translation, 'z', -30, 30).step(0.1);
+
+var lightBox2 = gui.addFolder('Point Light 2 Translation');
+lightBox2.add(props.light2.translation, 'x', -30, 30).step(0.1);
+lightBox2.add(props.light2.translation, 'y', -30, 30).step(0.1);
+lightBox2.add(props.light2.translation, 'z', -30, 30).step(0.1);
 
 
 (function () {
@@ -299,8 +311,7 @@ void main()
     gl.useProgram(program);
     mesh = mesh.processed[0];
     let vao = gl.createVertexArray();
-    
-    gl.bindVertexArray(vao);
+        gl.bindVertexArray(vao);
 
     let posizione = {
       attrs: {
@@ -347,7 +358,7 @@ void main()
     gl.uniform4fv(posizione.uniforms.u_lightDiffuse, [1.0, 1.0, 1.0, 1]);
     gl.uniform4fv(posizione.uniforms.u_lightSpecular, [1, 1, 1, 1]);
 
-    gl.uniform3fv(posizione.uniforms.lights.u_pl_position, [3.0, 3.0, 3.0]);
+    gl.uniform3fv(posizione.uniforms.lights.u_pl_position, [4.0, 3.0, 2.0]);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_ambient, [0.2, 0.2, 0.2]);
     gl.uniform3fv(posizione.uniforms.lights.u_pl_diffuse, [1., 1., 1.]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_diffuseMultiplier, 1.2);
@@ -355,7 +366,6 @@ void main()
     gl.uniform1f(posizione.uniforms.lights.u_pl_constant, [1.0]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_linear, [0.045]);
     gl.uniform1f(posizione.uniforms.lights.u_pl_quadratic, [0.0075]);
-
     
     gl.uniform4fv(posizione.uniforms.u_materialDiffuse, [255/256, 255/256, 255/256, 1]);
     gl.uniform4fv(posizione.uniforms.u_materialAmbient, [1, 1, 1, 1]);
@@ -401,6 +411,10 @@ void main()
       loadTextureBuffer(gl, textureSpec, mesh.material.specular);
     }
 
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    gl.bindVertexArray(null);
+
     let buffers = {
       vertexPosBuffer,
       indexBuffer,
@@ -410,19 +424,24 @@ void main()
       textureSpec
     }
 
-    let depthVao = gl.createVertexArray();
-    gl.bindVertexArray(depthVao);
+    let dvao = gl.createVertexArray();
+    gl.bindVertexArray(dvao);
 
-    let depthPos = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, depthPos);
+    let vPos = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vPos);
     gl.bufferData(gl.ARRAY_BUFFER, mesh.positions.array, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 3, gl.FLOAT, mesh.positions.normalized, 0, 0); //mesh.positions.stride, mesh.positions.offset);
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    let iPos = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iPos);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices.array, gl.STATIC_DRAW);
 
-    return { ...mesh, program, vao, depthVao, posizione, buffers };
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+    gl.bindVertexArray(null);
+    
+    return { ...mesh, program, vao, dvao, posizione, buffers };
   }
   
   loadGltf().then(scene => {
@@ -430,38 +449,13 @@ void main()
     
     const canvas = document.getElementById('webgl-canvas'),
           gl = canvas.getContext('webgl2');
-  
-    // init program
-    let program = createProgramWithShaders(gl, vShader, fShader);
-    // gl.useProgram(program);
-    
-    Object.keys(scene.meshes).map(k => {
-      let mesh = scene.meshes[k];
-      scene.meshes[k] = setupMesh(gl, mesh);
-    })
 
     let depthProgram = createProgramWithShaders(gl, vShaderDepth, fShaderDepth);
-    // gl.useProgram(depthProgram);
+    gl.useProgram(depthProgram);
     let depthUniforms = {
       lightSpaceMatrix: gl.getUniformLocation(depthProgram, 'lightSpaceMatrix'),
       model: gl.getUniformLocation(depthProgram, 'model')
     }
-
-    let depthMapFBO = gl.createFramebuffer();
-    const depthMap = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, depthMap);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT16, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, depthMapFBO);
-    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthMap, 0);
-    gl.drawBuffers([gl.NONE]);
-    gl.readBuffer(gl.NONE);
-
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
     let depthQuadProgram = createProgramWithShaders(gl, quadV, quadF);
     gl.useProgram(depthQuadProgram);
@@ -506,6 +500,15 @@ void main()
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindVertexArray(null);
 
+    // init program
+    let program = createProgramWithShaders(gl, vShader, fShader);
+    gl.useProgram(program);
+    
+    Object.keys(scene.meshes).map(k => {
+      let mesh = scene.meshes[k];
+      scene.meshes[k] = setupMesh(gl, mesh);
+    })
+
     var fov = 55 * Math.PI / 180, // radians
         aspect = gl.canvas.clientWidth / gl.canvas.clientHeight,
         zNear = 0.1,
@@ -520,94 +523,58 @@ void main()
           modelViewMatrix = mat4.create(),
           normalMatrix = mat4.create(),
 
-          // orthoMatrix = mat4.create(),
+          orthoMatrix = mat4.create(),
           lightProjection = mat4.create(),
           lightView = mat4.create(),
           lightSpaceMatrix = mat4.create();
 
     mat4.perspective(projectionMatrix, fov, aspect, zNear, zFar);
-    mat4.ortho(lightProjection, -5.0, 5.0, -5.0, 5.0, nearPlane, farPlane);
+    mat4.ortho(orthoMatrix, -10.0, 10.0, -10.0, 10.0, nearPlane, farPlane);
+    let {x, y, z} = props.light.translation;
+    mat4.lookAt(lightView, [x, y, z], [0, 0, 0], [0, 1., 0]);
+    mat4.multiply(lightSpaceMatrix, lightProjection, lightView);
     
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    let depthMapFBO = gl.createFramebuffer();
+    const depthMap = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, depthMap);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT16, 1024, 1024, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, depthMapFBO);
+    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthMap, 0);
+    gl.drawBuffers([gl.NONE]);
+    gl.readBuffer(gl.NONE);
+
+
+    var status = gl.checkFramebufferStatus(gl.DRAW_FRAMEBUFFER);
+    if (status != gl.FRAMEBUFFER_COMPLETE) {
+        console.log('fb status: ' + status.toString(16));
+        return;
+    }
+
+    // gl.drawBuffers([gl.NONE]);
+    // gl.readBuffer(gl.NONE);
+
+
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+
     let draw = (deltaTime) => {
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, depthMapFBO);
-      gl.clearColor(0.1, 0.1, 0.1, 1.0);
-      gl.viewport(0, 0, 1024, 1024);
-      gl.enable(gl.DEPTH_TEST);
-      gl.clear(gl.DEPTH_BUFFER_BIT);
-      gl.useProgram(depthProgram);
 
-      let {x, y, z} = props.light.translation;
-      mat4.lookAt(lightView, [x, y, z], [0, 0, 0], [0, 1., 0]);
-      mat4.multiply(lightSpaceMatrix, lightProjection, lightView);
-
-      Object.keys(scene.meshes).map(k => {
-        let mesh = scene.meshes[k];
-
-        let q = quat2.create();
-        quat2.rotateX(q, q, -1.5);
-        if (k > 0) {
-          quat2.rotateX(q, q, 1.5);
-          // quat2.rotateY(q, q, cubeRotation*0.2);
-          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
-        } else {
-          // quat2.rotateZ(q, q, cubeRotation*0.2);
-          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
-        }
-
-        scene.meshes[k].modelMatrix = modelMatrix;
-
-        gl.bindVertexArray(mesh.depthVao);
-        gl.uniformMatrix4fv(depthUniforms.lightSpaceMatrix, false, lightSpaceMatrix);
-        gl.uniformMatrix4fv(depthUniforms.model, false, modelMatrix);
-
-        gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
-      });
-
-
-      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-      gl.viewport(0, 0, gl.canvas.clientWidth, gl.canvas.clientHeight);
-      gl.clearColor(0.05, 0.05, 0.05, 1);
-      gl.clearDepth(100);
-      gl.enable(gl.DEPTH_TEST);
-      gl.enable(gl.CULL_FACE);
-      gl.depthFunc(gl.LEQUAL);
-      // gl.enable(gl.GL_FRAMEBUFFER_SRGB);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-      gl.useProgram(depthQuadProgram);
-      gl.bindVertexArray(quadVao);
-      
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, depthMap);
-      gl.uniform1f(depthQuadUniforms.near_plane, nearPlane);
-      gl.uniform1f(depthQuadUniforms.far_plane, farPlane);
-
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
+      // gl.clearColor(0.1, 0.1, 0.1, 1.0);
+      // gl.viewport(0, 0, 1024, 1024);
+      // gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, depthMapFBO);
+      // gl.clear(gl.DEPTH_BUFFER_BIT);
+      // gl.enable(gl.DEPTH_TEST);
+      // gl.useProgram(depthProgram);
 
       // Object.keys(scene.meshes).map(k => {
-      //   mat4.identity(cameraMatrix);
-      //   let q2 = quat2.create();
-      //   quat2.rotateX(q2, q2, 0);
-      //   quat2.rotateY(q2, q2, 0);
-      //   quat2.rotateZ(q2, q2, 0);
-      //   mat4.fromRotationTranslation(cameraMatrix, q2, [0, 0, 0]);
-
       //   let mesh = scene.meshes[k];
-      //   gl.useProgram(mesh.program);
 
-      //   gl.bindVertexArray(mesh.vao);
-
-      //   gl.activeTexture(gl.TEXTURE0);
-      //   gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.texture);
-      //   gl.uniform1i(mesh.posizione.uniforms.u_diffuse, 0);
-
-      //   if (mesh.material.specular) {
-      //     gl.activeTexture(gl.TEXTURE1);
-      //     gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.textureSpec);
-      //     gl.uniform1i(mesh.posizione.uniforms.u_specular, 1);
-      //   }
-      
       //   let q = quat2.create();
       //   quat2.rotateX(q, q, -1.5);
       //   if (k > 0) {
@@ -619,22 +586,88 @@ void main()
       //     mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
       //   }
 
-        
-      //   // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
-        
-      //   gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [props.light.translation.x, props.light.translation.y, props.light.translation.z]);
-      //   mat4.invert(modelViewMatrix, cameraMatrix);
-      //   mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
-
-      //   mat4.invert(normalMatrix, modelViewMatrix);
-      //   mat4.transpose(normalMatrix, normalMatrix);
-
-      //   gl.uniformMatrix4fv(mesh.posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
-      //   gl.uniformMatrix4fv(mesh.posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
-      //   gl.uniformMatrix4fv(mesh.posizione.uniforms.u_normalMatrix, false, normalMatrix);
+      //   gl.bindVertexArray(mesh.dvao);
+      //   gl.uniformMatrix4fv(depthUniforms.lightSpaceMatrix, false, lightSpaceMatrix);
+      //   gl.uniformMatrix4fv(depthUniforms.model, false, modelMatrix);
 
       //   gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
       // })
+
+      gl.viewport(0, 0, gl.canvas.clientWidth, gl.canvas.clientHeight);
+      gl.clearColor(0.05, 0.05, 0.05, 1);
+      gl.clearDepth(100);
+      gl.enable(gl.DEPTH_TEST);
+      gl.enable(gl.CULL_FACE);
+      gl.depthFunc(gl.LEQUAL);
+      // gl.enable(gl.GL_FRAMEBUFFER_SRGB);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+      
+      // gl.useProgram(depthQuadProgram);
+      // gl.bindVertexArray(quadVao);
+      
+      // gl.activeTexture(gl.TEXTURE0);
+      // gl.bindTexture(gl.TEXTURE_2D, depthMap);
+      // gl.uniform1i(depthQuadUniforms.depthMap, 1);
+      // gl.uniform1f(depthQuadUniforms.near_plane, nearPlane);
+      // gl.uniform1f(depthQuadUniforms.far_plane, farPlane);
+
+      // gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+
+      Object.keys(scene.meshes).map(k => {
+        mat4.identity(cameraMatrix);
+        let q2 = quat2.create();
+        quat2.rotateX(q2, q2, 0);
+        quat2.rotateY(q2, q2, 0);
+        quat2.rotateZ(q2, q2, 0);
+        mat4.fromRotationTranslation(cameraMatrix, q2, [0, 0, 0]);
+
+        let mesh = scene.meshes[k];
+        gl.useProgram(mesh.program);
+
+        gl.bindVertexArray(mesh.vao);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.texture);
+        gl.uniform1i(mesh.posizione.uniforms.u_diffuse, 0);
+
+        if (mesh.material.specular) {
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.textureSpec);
+          gl.uniform1i(mesh.posizione.uniforms.u_specular, 1);
+        }
+
+        // gl.activeTexture(gl.TEXTURE2)
+        // gl.bindTexture(gl.TEXTURE_2D, depthMap);
+      
+        let q = quat2.create();
+        quat2.rotateX(q, q, -1.5);
+        if (k > 0) {
+          quat2.rotateX(q, q, 1.5);
+          quat2.rotateY(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
+        } else {
+          // quat2.rotateZ(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
+        }
+
+        
+        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
+        
+        gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [x, y, z]);
+        mat4.invert(modelViewMatrix, cameraMatrix);
+        mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
+
+        mat4.invert(normalMatrix, modelViewMatrix);
+        mat4.transpose(normalMatrix, normalMatrix);
+
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_normalMatrix, false, normalMatrix);
+
+        gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
+      })
 
       cubeRotation += deltaTime;
     }
@@ -645,7 +678,7 @@ void main()
       const deltaTime = now - then;
       then = now;
       draw(deltaTime);
-      requestAnimationFrame(render);
+      // requestAnimationFrame(render);
     }
 
     requestAnimationFrame(render);

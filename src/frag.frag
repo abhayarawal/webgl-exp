@@ -84,7 +84,8 @@ void main () {
   vec3 N = normalize(v_normal); // normal
   vec3 E = normalize(v_eyeVector); // view direction
 
-  vec4 r1 = computeDirLight(u_dirLight, N, E);
+  // vec4 r1 = computeDirLight(u_dirLight, N, E);
+  vec4 r1;
   
   for (int i = 0; i < NR_POINT_LIGHTS; i++) {
     r1 += computePointLight(u_pointLights[i], N, E);
