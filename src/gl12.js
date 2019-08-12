@@ -424,7 +424,7 @@ void main()
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices.array, gl.STATIC_DRAW);
 
-    return { ...mesh, program, vao, depthVao, posizione, buffers };
+    return { ...mesh, program, vao, depthVao, posizione, buffers, modelMatrix: mat4.create() };
   }
   
   loadGltf().then(scene => {
@@ -549,18 +549,16 @@ void main()
         quat2.rotateX(q, q, -1.5);
         if (k > 0) {
           quat2.rotateX(q, q, 1.5);
-          // quat2.rotateY(q, q, cubeRotation*0.2);
-          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
+          quat2.rotateY(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(mesh.modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
         } else {
           // quat2.rotateZ(q, q, cubeRotation*0.2);
-          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
+          mat4.fromRotationTranslationScale(mesh.modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
         }
-
-        scene.meshes[k].modelMatrix = modelMatrix;
 
         gl.bindVertexArray(mesh.depthVao);
         gl.uniformMatrix4fv(depthUniforms.lightSpaceMatrix, false, lightSpaceMatrix);
-        gl.uniformMatrix4fv(depthUniforms.model, false, modelMatrix);
+        gl.uniformMatrix4fv(depthUniforms.model, false, mesh.modelMatrix);
 
         gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
       });
@@ -614,24 +612,12 @@ void main()
         gl.activeTexture(gl.TEXTURE2);
         gl.bindTexture(gl.TEXTURE_2D, depthMap);
         gl.uniform1i(mesh.posizione.uniforms.shadowMap, 2);
-      
-        let q = quat2.create();
-        quat2.rotateX(q, q, -1.5);
-        if (k > 0) {
-          quat2.rotateX(q, q, 1.5);
-          // quat2.rotateY(q, q, cubeRotation*0.2);
-          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
-        } else {
-          // quat2.rotateZ(q, q, cubeRotation*0.2);
-          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
-        }
-
         
         // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
         
-        gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [props.light.translation.x, props.light.translation.y, props.light.translation.z]);
+        gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [x, y, z]);
         mat4.invert(modelViewMatrix, cameraMatrix);
-        mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
+        mat4.multiply(modelViewMatrix, modelViewMatrix, scene.meshes[k].modelMatrix);
 
         mat4.invert(normalMatrix, modelViewMatrix);
         mat4.transpose(normalMatrix, normalMatrix);

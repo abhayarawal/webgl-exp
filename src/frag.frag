@@ -59,7 +59,7 @@ vec4 computeDirLight (DirLight light, vec3 N, vec3 E) {
   return vec4(vec3(Ia + Id + Is), 1.0);
 }
 
-float ShadowCalculation(vec4 fragPosLightSpace)
+float ShadowCalculation(vec4 fragPosLightSpace, vec3 N, vec3 L)
 {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     // transform to [0,1] range
@@ -69,7 +69,8 @@ float ShadowCalculation(vec4 fragPosLightSpace)
     // get depth of current fragment from light's perspective
     float currentDepth = projCoords.z;
     // check whether current frag pos is in shadow
-    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+    float bias = max(0.05 * (1.0 - dot(N, L)), 0.005);  
+    float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;  
 
     return shadow;
 }
@@ -93,7 +94,7 @@ vec4 computePointLight (PointLight light, vec3 N, vec3 E) {
   Id *= attenuation;
   Is *= attenuation;
 
-  float shadow = ShadowCalculation(FragPosLightSpace);       
+  float shadow = ShadowCalculation(FragPosLightSpace, N, L);       
   vec3 lighting = (Ia + (1.0 - shadow) * (Id + Is));    
 
   // return vec4(vec3(Ia), 1.);
