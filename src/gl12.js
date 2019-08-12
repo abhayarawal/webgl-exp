@@ -312,6 +312,7 @@ void main()
         u_projectionMatrix: gl.getUniformLocation(program, 'u_projectionMatrix'),
         u_modelViewMatrix: gl.getUniformLocation(program, 'u_modelViewMatrix'),
         u_normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
+        lightSpaceMatrix: gl.getUniformLocation(program, 'lightSpaceMatrix'),
 
         u_shine: gl.getUniformLocation(program, 'u_shine'),
         u_lightDirection: gl.getUniformLocation(program, 'u_dirLight.lightDirection'),
@@ -325,6 +326,7 @@ void main()
 
         u_diffuse: gl.getUniformLocation(program, 'u_diffuse'),
         u_specular: gl.getUniformLocation(program, 'u_specular'),
+        shadowMap: gl.getUniformLocation(program, 'shadowMap'),
 
         lights: {
           u_pl_position: gl.getUniformLocation(program, 'u_pointLights[0].position'),
@@ -574,67 +576,73 @@ void main()
       // gl.enable(gl.GL_FRAMEBUFFER_SRGB);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-      gl.useProgram(depthQuadProgram);
-      gl.bindVertexArray(quadVao);
+
+      // gl.useProgram(depthQuadProgram);
+      // gl.bindVertexArray(quadVao);
       
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, depthMap);
-      gl.uniform1f(depthQuadUniforms.near_plane, nearPlane);
-      gl.uniform1f(depthQuadUniforms.far_plane, farPlane);
+      // gl.activeTexture(gl.TEXTURE0);
+      // gl.bindTexture(gl.TEXTURE_2D, depthMap);
+      // gl.uniform1f(depthQuadUniforms.near_plane, nearPlane);
+      // gl.uniform1f(depthQuadUniforms.far_plane, farPlane);
 
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      // gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
 
-      // Object.keys(scene.meshes).map(k => {
-      //   mat4.identity(cameraMatrix);
-      //   let q2 = quat2.create();
-      //   quat2.rotateX(q2, q2, 0);
-      //   quat2.rotateY(q2, q2, 0);
-      //   quat2.rotateZ(q2, q2, 0);
-      //   mat4.fromRotationTranslation(cameraMatrix, q2, [0, 0, 0]);
+      Object.keys(scene.meshes).map(k => {
+        mat4.identity(cameraMatrix);
+        let q2 = quat2.create();
+        quat2.rotateX(q2, q2, 0);
+        quat2.rotateY(q2, q2, 0);
+        quat2.rotateZ(q2, q2, 0);
+        mat4.fromRotationTranslation(cameraMatrix, q2, [0, 0, 0]);
 
-      //   let mesh = scene.meshes[k];
-      //   gl.useProgram(mesh.program);
+        let mesh = scene.meshes[k];
+        gl.useProgram(mesh.program);
 
-      //   gl.bindVertexArray(mesh.vao);
+        gl.bindVertexArray(mesh.vao);
 
-      //   gl.activeTexture(gl.TEXTURE0);
-      //   gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.texture);
-      //   gl.uniform1i(mesh.posizione.uniforms.u_diffuse, 0);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.texture);
+        gl.uniform1i(mesh.posizione.uniforms.u_diffuse, 0);
 
-      //   if (mesh.material.specular) {
-      //     gl.activeTexture(gl.TEXTURE1);
-      //     gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.textureSpec);
-      //     gl.uniform1i(mesh.posizione.uniforms.u_specular, 1);
-      //   }
+        if (mesh.material.specular) {
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, mesh.buffers.textureSpec);
+          gl.uniform1i(mesh.posizione.uniforms.u_specular, 1);
+        }
+
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, depthMap);
+        gl.uniform1i(mesh.posizione.uniforms.shadowMap, 2);
       
-      //   let q = quat2.create();
-      //   quat2.rotateX(q, q, -1.5);
-      //   if (k > 0) {
-      //     quat2.rotateX(q, q, 1.5);
-      //     // quat2.rotateY(q, q, cubeRotation*0.2);
-      //     mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
-      //   } else {
-      //     // quat2.rotateZ(q, q, cubeRotation*0.2);
-      //     mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
-      //   }
+        let q = quat2.create();
+        quat2.rotateX(q, q, -1.5);
+        if (k > 0) {
+          quat2.rotateX(q, q, 1.5);
+          // quat2.rotateY(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1., 1., 1.]);
+        } else {
+          // quat2.rotateZ(q, q, cubeRotation*0.2);
+          mat4.fromRotationTranslationScale(modelMatrix, q, [0, -1, -3], [1.5, 1.5, 1.5]);
+        }
 
         
-      //   // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
+        // mat4.fromRotationTranslationScale(modelMatrix, q, [0, 0, -5], [.011, .011, .011]);
         
-      //   gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [props.light.translation.x, props.light.translation.y, props.light.translation.z]);
-      //   mat4.invert(modelViewMatrix, cameraMatrix);
-      //   mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
+        gl.uniform3fv(mesh.posizione.uniforms.lights.u_pl_position, [props.light.translation.x, props.light.translation.y, props.light.translation.z]);
+        mat4.invert(modelViewMatrix, cameraMatrix);
+        mat4.multiply(modelViewMatrix, modelViewMatrix, modelMatrix);
 
-      //   mat4.invert(normalMatrix, modelViewMatrix);
-      //   mat4.transpose(normalMatrix, normalMatrix);
+        mat4.invert(normalMatrix, modelViewMatrix);
+        mat4.transpose(normalMatrix, normalMatrix);
 
-      //   gl.uniformMatrix4fv(mesh.posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
-      //   gl.uniformMatrix4fv(mesh.posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
-      //   gl.uniformMatrix4fv(mesh.posizione.uniforms.u_normalMatrix, false, normalMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.lightSpaceMatrix, false, lightSpaceMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_projectionMatrix, false, projectionMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_modelViewMatrix, false, modelViewMatrix);
+        gl.uniformMatrix4fv(mesh.posizione.uniforms.u_normalMatrix, false, normalMatrix);
 
-      //   gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
-      // })
+        gl.drawElements(mesh.mode, mesh.indices.count, mesh.indices.ctype, 0);
+      })
 
       cubeRotation += deltaTime;
     }
